@@ -11,15 +11,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
         
-        :root {
-            --brand-color: #00aff0;
-        }
-
         body { 
             font-family: 'Plus Jakarta Sans', sans-serif; 
-            background-color: #f8fafc;
         }
 
         .tab-content { 
@@ -28,132 +23,128 @@
 
         .tab-content.active { 
             display: block; 
-            animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); 
+            animation: slideUp 0.4s ease-out; 
         }
 
         @keyframes slideUp { 
-            from { opacity: 0; transform: translateY(10px); } 
+            from { opacity: 0; transform: translateY(20px); } 
             to { opacity: 1; transform: translateY(0); } 
         }
 
+        /* Rediseño de ítems de la barra lateral con el nuevo color */
         .sidebar-item {
-            color: rgba(255, 255, 255, 0.8);
-            transition: all 0.2s ease;
+            color: rgba(255, 255, 255, 0.7);
+            transition: all 0.3s ease;
         }
 
         .sidebar-item:hover {
             background-color: rgba(255, 255, 255, 0.1);
-            color: #ffffff;
+            color: white;
         }
 
         .sidebar-item.active { 
-            background-color: #ffffff; 
-            color: var(--brand-color); 
+            background-color: white; 
+            color: #00aff0; 
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
 
         .glass-effect {
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
-
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
-<body class="flex h-screen overflow-hidden text-slate-900">
+<body class="bg-[#f1f5f9] flex h-screen overflow-hidden text-slate-900">
 
     <div id="login-screen" class="fixed inset-0 bg-slate-900 z-[110] flex items-center justify-center p-4">
-        <div class="bg-white p-10 rounded-[2.5rem] shadow-2xl max-w-sm w-full border border-slate-100">
-            <div class="text-center mb-8">
-                <div class="inline-flex p-5 rounded-[1.5rem] shadow-lg mb-6" style="background-color: var(--brand-color);">
+        <div class="bg-white p-12 rounded-[3rem] shadow-2xl max-w-sm w-full border border-slate-200">
+            <div class="text-center mb-10">
+                <div class="inline-flex p-5 rounded-[2rem] shadow-xl mb-6" style="background-color: #00aff0;">
                     <i data-lucide="shield-check" class="text-white w-10 h-10"></i>
                 </div>
-                <h1 class="text-3xl font-black text-slate-800 tracking-tighter">SIIS-SPT</h1>
-                <p class="text-slate-400 text-[9px] font-bold uppercase tracking-[0.3em] mt-2">Costa Rica Auditoría</p>
+                <h1 class="text-4xl font-black text-slate-800 tracking-tighter">SIIS-SPT</h1>
+                <p class="text-slate-400 text-[10px] font-bold uppercase tracking-[0.3em] mt-3">Costa Rica Auditoría</p>
             </div>
             
             <div class="space-y-4">
                 <div class="relative">
                     <i data-lucide="user" class="absolute left-4 top-4 w-5 h-5 text-slate-400"></i>
-                    <input type="email" id="login-email" placeholder="Usuario Institucional" class="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-[#00aff0]/10 transition-all">
+                    <input type="email" id="login-email" placeholder="Usuario Institucional" class="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-[#00aff0]/20 transition-all">
                 </div>
                 <div class="relative">
                     <i data-lucide="lock" class="absolute left-4 top-4 w-5 h-5 text-slate-400"></i>
-                    <input type="password" id="login-pass" placeholder="Contraseña" class="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-[#00aff0]/10 transition-all">
+                    <input type="password" id="login-pass" placeholder="Contraseña" class="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-[#00aff0]/20 transition-all">
                 </div>
-                <button onclick="handleLogin()" id="btn-login" class="w-full text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl transition-all active:scale-95 hover:opacity-90" style="background-color: var(--brand-color);">Iniciar Sesión</button>
+                <button onclick="handleLogin()" id="btn-login" class="w-full text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-2xl transition-all active:scale-95 hover:opacity-90" style="background-color: #00aff0;">Iniciar Sesión</button>
             </div>
         </div>
     </div>
 
-    <aside class="w-72 flex flex-col shrink-0 shadow-2xl z-50" style="background-color: #00aff0;">
-        <div class="p-8 border-b border-white/10">
+    <aside class="w-80 flex flex-col shrink-0" style="background-color: #00aff0; color: white;">
+        <div class="p-10 border-b border-white/20 mb-8">
             <div class="flex items-center space-x-3">
-                <div class="w-2 h-8 bg-white rounded-full"></div>
-                <h2 class="text-2xl font-black tracking-tighter text-white">SIIS-SPT</h2>
+                <div class="w-3 h-10 bg-white rounded-full shadow-lg"></div>
+                <h2 class="text-3xl font-black tracking-tighter text-white">SIIS-SPT</h2>
             </div>
-            <p class="text-[9px] text-white/60 font-bold uppercase tracking-widest mt-2">Plataforma Técnica</p>
+            <p class="text-[10px] text-white/80 font-bold uppercase tracking-widest mt-2">Plataforma Técnica SPT/CAT</p>
         </div>
 
-        <nav class="flex-1 px-4 py-6 space-y-2">
-            <button onclick="switchTab('dashboard', this)" class="sidebar-item active w-full flex items-center p-4 rounded-2xl transition-all group">
-                <i data-lucide="layout-dashboard" class="mr-3 w-5 h-5"></i>
-                <span class="font-bold text-sm tracking-tight">Dashboard</span>
+        <nav class="flex-1 px-4 space-y-3">
+            <button onclick="switchTab('dashboard', this)" class="sidebar-item active w-full flex items-center p-5 rounded-3xl transition-all group">
+                <i data-lucide="layout-dashboard" class="mr-4 w-6 h-6"></i>
+                <span class="font-bold text-sm uppercase tracking-tight">Dashboard de Auditoría</span>
             </button>
             
-            <button onclick="switchTab('laboratorio', this)" class="sidebar-item w-full flex items-center p-4 rounded-2xl transition-all group">
-                <i data-lucide="brain-circuit" class="mr-3 w-5 h-5"></i>
-                <span class="font-bold text-sm tracking-tight">Laboratorio IA</span>
+            <button onclick="switchTab('laboratorio', this)" class="sidebar-item w-full flex items-center p-5 rounded-3xl transition-all group">
+                <i data-lucide="brain-circuit" class="mr-4 w-6 h-6"></i>
+                <span class="font-bold text-sm uppercase tracking-tight">Laboratorio IA</span>
             </button>
 
-            <button id="admin-tab" onclick="switchTab('admin', this)" class="sidebar-item hidden w-full flex items-center p-4 rounded-2xl transition-all group">
-                <i data-lucide="shield-alert" class="mr-3 w-5 h-5"></i>
-                <span class="font-bold text-sm tracking-tight">Validación Técnica</span>
+            <button id="admin-tab" onclick="switchTab('admin', this)" class="sidebar-item hidden w-full flex items-center p-5 rounded-3xl bg-white/10 text-white border border-white/20 transition-all group">
+                <i data-lucide="shield-check" class="mr-4 w-6 h-6"></i>
+                <span class="font-bold text-sm uppercase tracking-tight">Panel de Validación</span>
             </button>
             
-            <div class="pt-6 border-t border-white/10 mt-4">
+            <div class="pt-10 border-t border-white/20 mt-6 px-4">
                 <button onclick="downloadOfficialReport()" class="w-full flex items-center p-4 rounded-2xl hover:bg-white/10 text-white transition-all">
-                    <i data-lucide="file-down" class="mr-3 w-5 h-5 text-white/70"></i>
-                    <span class="font-bold text-[11px] uppercase tracking-wider">Reporte Oficial</span>
+                    <i data-lucide="file-text" class="mr-4 w-5 h-5"></i>
+                    <span class="font-black text-[10px] uppercase tracking-[0.2em]">Generar Reporte PDF</span>
                 </button>
             </div>
         </nav>
 
-        <div class="p-6 border-t border-white/10 bg-black/5">
-            <div id="user-info-section" class="mb-4 hidden">
-                <div id="display-email" class="text-[10px] font-bold text-white/90 truncate bg-white/10 p-3 rounded-xl border border-white/10"></div>
+        <div class="p-8 border-t border-white/20 bg-black/5">
+            <div id="user-info-section" class="mb-6 hidden">
+                <p class="text-[9px] font-black text-white/70 uppercase tracking-widest mb-3 px-2">Usuario Activo</p>
+                <div id="display-email" class="text-[11px] font-bold text-white truncate bg-white/10 p-4 rounded-2xl border border-white/20"></div>
             </div>
-            <button onclick="handleLogout()" class="w-full flex items-center p-3 rounded-xl text-white hover:bg-red-500 transition-all font-bold text-[10px] uppercase tracking-widest">
-                <i data-lucide="log-out" class="mr-3 w-4 h-4"></i> Salir del Sistema
+            <button onclick="handleLogout()" class="w-full flex items-center p-4 rounded-2xl text-white hover:bg-red-500 transition-all font-black text-[10px] uppercase tracking-widest">
+                <i data-lucide="log-out" class="mr-4 w-5 h-5"></i> Cerrar Sesión
             </button>
         </div>
     </aside>
 
-    <main class="flex-1 overflow-y-auto p-10 lg:p-14">
+    <main class="flex-1 overflow-y-auto p-12 lg:p-16">
         
         <div id="dashboard" class="tab-content active">
-            <div class="flex justify-between items-start mb-10">
+            <div class="flex justify-between items-end mb-12">
                 <div>
-                    <h2 class="text-5xl font-black text-slate-800 tracking-tighter mb-2">Auditoría</h2>
-                    <p class="text-slate-500 font-medium text-lg">Seguimiento de cumplimiento institucional.</p>
+                    <h2 class="text-6xl font-black text-slate-800 tracking-tighter mb-3">Auditoría</h2>
+                    <p class="text-slate-500 font-semibold text-xl">Estado de cumplimiento de recomendaciones internacionales.</p>
                 </div>
-                <div id="inst-tag" class="bg-white px-6 py-3 rounded-2xl border border-slate-200 shadow-sm text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                    Sincronizando...
+                <div id="inst-tag" class="bg-white px-8 py-4 rounded-3xl border border-slate-200 shadow-sm text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 italic">
+                    Sincronizando con base de datos...
                 </div>
             </div>
 
-            <div class="bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/60 border border-slate-100 overflow-hidden">
+            <div class="bg-white rounded-[3.5rem] shadow-2xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
                 <table class="w-full text-left">
-                    <thead class="bg-slate-50/50 border-b border-slate-100">
+                    <thead class="bg-slate-50 border-b border-slate-100">
                         <tr>
-                            <th class="px-8 py-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Institución Responsable</th>
-                            <th class="px-8 py-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Progreso</th>
-                            <th class="px-8 py-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Acción</th>
+                            <th class="p-10 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Institución Responsable</th>
+                            <th class="p-10 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] text-center">Avance Validado</th>
+                            <th class="p-10 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Gestión</th>
                         </tr>
                     </thead>
                     <tbody id="recommendations-list" class="divide-y divide-slate-50">
@@ -164,68 +155,66 @@
 
         <div id="laboratorio" class="tab-content">
             <div class="max-w-4xl mx-auto">
-                <h2 class="text-5xl font-black text-slate-800 mb-2 tracking-tighter">Motor PIDA</h2>
-                <p class="text-slate-500 mb-10 text-lg font-medium">Análisis de barreras institucionales mediante IA.</p>
+                <h2 class="text-6xl font-black text-slate-800 mb-4 tracking-tighter">Incidencia IA</h2>
+                <p class="text-slate-500 mb-12 text-xl font-medium">Análisis estratégico mediante PIDA.</p>
                 
-                <div class="bg-white p-10 rounded-[3rem] border border-slate-200 shadow-xl">
-                    <div class="mb-8">
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Obstáculo detectado:</label>
-                        <textarea id="ai-input" class="w-full h-48 p-8 bg-slate-50 border border-slate-100 rounded-[2rem] focus:ring-4 focus:ring-[#00aff0]/10 outline-none transition-all text-xl leading-relaxed" placeholder="Describa el problema político o técnico..."></textarea>
+                <div class="bg-white p-14 rounded-[3.5rem] border border-slate-200 shadow-2xl">
+                    <div class="mb-10">
+                        <label class="block text-xs font-black text-slate-400 uppercase tracking-[0.3em] mb-6">Descripción del Obstáculo:</label>
+                        <textarea id="ai-input" class="w-full h-64 p-10 bg-slate-50 border-0 rounded-[2.5rem] focus:ring-4 focus:ring-[#00aff0]/10 outline-none transition-all text-2xl leading-relaxed" placeholder="Ej: No existe voluntad política para reformar el reglamento interno..."></textarea>
                     </div>
                     
-                    <button onclick="analyzeInstitutionalBarrier()" id="ai-btn" class="w-full text-white py-6 rounded-[1.5rem] font-black text-lg uppercase tracking-widest shadow-lg transition-all active:scale-95 flex items-center justify-center hover:opacity-90" style="background-color: var(--brand-color);">
-                        Ejecutar Análisis Estratégico
-                    </button>
+                    <button onclick="analyzeInstitutionalBarrier()" id="ai-btn" class="w-full text-white py-7 rounded-[2rem] font-black text-xl uppercase tracking-widest shadow-2xl transition-all active:scale-95 flex items-center justify-center hover:opacity-90" style="background-color: #00aff0;">Ejecutar Análisis PIDA</button>
                     
-                    <div id="ai-result" class="mt-10 p-10 bg-slate-50 text-slate-700 rounded-[2rem] hidden border-l-[12px] border-[#00aff0] whitespace-pre-wrap leading-relaxed shadow-inner text-lg">
+                    <div id="ai-result" class="mt-14 p-12 bg-slate-50 text-slate-700 rounded-[3rem] hidden border-l-[16px] border-[#00aff0] whitespace-pre-wrap leading-loose shadow-inner text-xl">
                         </div>
                 </div>
             </div>
         </div>
 
         <div id="admin" class="tab-content">
-            <h2 class="text-5xl font-black text-slate-800 mb-2 tracking-tighter">Validación</h2>
-            <p class="text-slate-500 mb-12 text-lg">Control de calidad de evidencias institucionales.</p>
+            <h2 class="text-6xl font-black text-[#00aff0] mb-4 tracking-tighter">Validación</h2>
+            <p class="text-slate-500 mb-16 text-xl">Revisión técnica de evidencias cargadas por las instituciones.</p>
             
-            <div id="admin-pending-container" class="space-y-6">
-                <div class="bg-white p-20 rounded-[3rem] border-2 border-dashed border-slate-200 text-center">
-                    <i data-lucide="inbox" class="w-16 h-16 text-slate-200 mx-auto mb-6"></i>
-                    <p class="text-slate-400 font-bold uppercase tracking-widest text-xs">Bandeja de entrada vacía</p>
+            <div id="admin-pending-container" class="space-y-8">
+                <div class="bg-white p-24 rounded-[4rem] border-4 border-dashed border-slate-100 text-center flex flex-col items-center">
+                    <i data-lucide="inbox" class="w-24 h-24 text-slate-100 mb-8"></i>
+                    <p class="text-slate-300 font-black uppercase tracking-[0.3em] text-sm">No hay evidencias pendientes de revisión técnica</p>
                 </div>
             </div>
         </div>
     </main>
 
-    <div id="upload-modal" class="fixed inset-0 bg-slate-900/90 hidden flex items-center justify-center p-6 z-[120] backdrop-blur-md">
-        <div class="bg-white p-10 rounded-[3rem] max-w-xl w-full shadow-2xl scale-in-center">
-            <div class="flex justify-between items-start mb-8">
+    <div id="upload-modal" class="fixed inset-0 bg-slate-900/95 hidden flex items-center justify-center p-6 z-[120] backdrop-blur-2xl">
+        <div class="bg-white p-14 rounded-[4rem] max-w-xl w-full shadow-2xl animate-in zoom-in duration-300">
+            <div class="flex justify-between items-start mb-10">
                 <div>
-                    <h3 class="text-3xl font-black tracking-tight mb-1 text-slate-800">Cargar Evidencia</h3>
-                    <p class="text-slate-400 font-bold text-sm uppercase tracking-wider">Acreditación técnica</p>
+                    <h3 class="text-4xl font-black tracking-tight mb-2">Cargar Prueba</h3>
+                    <p class="text-slate-500 font-bold text-lg">Oficialización de avance técnico.</p>
                 </div>
-                <button onclick="closeModal()" class="text-slate-300 hover:text-red-500 transition-colors"><i data-lucide="x-circle" class="w-8 h-8"></i></button>
+                <button onclick="closeModal()" class="text-slate-200 hover:text-red-500 transition-colors"><i data-lucide="x-circle" class="w-10 h-10"></i></button>
             </div>
             
             <input type="hidden" id="modal-rec-id">
             
-            <div class="space-y-8">
+            <div class="space-y-10">
                 <div>
-                    <label class="block text-[10px] font-bold uppercase text-slate-400 mb-3 tracking-widest">Descripción del avance:</label>
-                    <textarea id="modal-desc" class="w-full p-6 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-[#00aff0]/10 text-base" rows="3" placeholder="Detalle las acciones realizadas..."></textarea>
+                    <label class="block text-[10px] font-black uppercase text-slate-400 mb-4 tracking-widest">Resumen del logro:</label>
+                    <textarea id="modal-desc" class="w-full p-8 bg-slate-50 border border-slate-100 rounded-[2rem] outline-none focus:ring-4 focus:ring-[#00aff0]/10 text-lg leading-relaxed" rows="4" placeholder="Describa cómo esta acción cumple con la recomendación..."></textarea>
                 </div>
                 
-                <div class="p-8 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center">
-                    <i data-lucide="file-up" class="w-10 h-10 text-slate-300 mb-4"></i>
-                    <input type="file" id="modal-file" class="text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-bold file:bg-[#00aff0] file:text-white cursor-pointer">
+                <div class="p-8 bg-slate-50 border-4 border-dashed border-slate-200 rounded-[2.5rem] flex flex-col items-center">
+                    <label class="block text-[10px] font-black uppercase text-slate-400 mb-6 tracking-widest">Documento Probatorio (PDF):</label>
+                    <input type="file" id="modal-file" class="block w-full text-sm text-slate-500 file:mr-6 file:py-4 file:px-8 file:rounded-full file:border-0 file:text-[11px] file:font-black file:bg-[#00aff0] file:text-white hover:file:bg-[#009bd4] cursor-pointer">
                 </div>
 
-                <button onclick="processEvidenceUpload()" id="btn-submit-ev" class="w-full py-5 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl transition-all active:scale-95 hover:opacity-90" style="background-color: var(--brand-color);">Sincronizar Datos</button>
+                <button onclick="processEvidenceUpload()" id="btn-submit-ev" class="w-full py-6 text-white rounded-[2rem] font-black text-sm uppercase tracking-[0.2em] shadow-2xl transition-all active:scale-95 hover:opacity-90" style="background-color: #00aff0;">Sincronizar con Storage</button>
             </div>
         </div>
     </div>
 
     <script>
-        // --- CONFIGURACIÓN ---
+        // --- CONFIGURACIÓN E INICIALIZACIÓN ---
         const firebaseConfig = {
             apiKey: "AIzaSyD0n5oY7LGk7qaqMX_PjBvHfWnaxRa1nqg",
             authDomain: "siis-stp.firebaseapp.com",
@@ -235,7 +224,7 @@
         firebase.initializeApp(firebaseConfig);
         lucide.createIcons();
 
-        // --- AUTH ---
+        // --- GESTIÓN DE AUTENTICACIÓN Y ROLES ---
         firebase.auth().onAuthStateChanged(async (user) => {
             if (user) {
                 document.getElementById('login-screen').classList.add('hidden');
@@ -250,25 +239,31 @@
         async function syncSystemData(user) {
             const token = await user.getIdToken();
             try {
-                const authMeRes = await fetch('/api/auth/me', { headers: { 'Authorization': `Bearer ${token}` } });
+                const authMeRes = await fetch('/api/auth/me', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
                 const profile = await authMeRes.json();
-                const isAdmin = profile.is_admin || user.email === "durquilla@iiresodh.org" || user.email === "prueba@iiresodh.org";
+
+                const isAdmin = profile.is_admin || 
+                                user.email === "durquilla@iiresodh.org" || 
+                                user.email === "prueba@iiresodh.org";
 
                 if (isAdmin) {
                     document.getElementById('admin-tab').classList.remove('hidden');
-                    const tag = document.getElementById('inst-tag');
-                    tag.innerText = "Admin: IIRESODH";
-                    tag.classList.add('text-[#00aff0]', 'border-[#00aff0]/20', 'bg-[#00aff0]/5');
+                    document.getElementById('inst-tag').innerText = "Acceso: Administrador Técnico IIRESODH";
+                    document.getElementById('inst-tag').classList.add('text-[#00aff0]', 'border-[#00aff0]/20');
                     loadPendingAdminQueue();
                 } else {
-                    document.getElementById('inst-tag').innerText = "Punto Focal Institucional";
+                    document.getElementById('inst-tag').innerText = "Acceso: Punto Focal Institucional";
                 }
 
-                const recRes = await fetch('/api/recommendations', { headers: { 'Authorization': `Bearer ${token}` } });
+                const recRes = await fetch('/api/recommendations', { 
+                    headers: { 'Authorization': `Bearer ${token}` } 
+                });
                 const recommendations = await recRes.json();
                 renderDashboard(recommendations);
             } catch (err) {
-                console.error("Error sync:", err);
+                console.error("Falla en sincronización maestra:", err);
             }
         }
 
@@ -276,20 +271,20 @@
             const list = document.getElementById('recommendations-list');
             list.innerHTML = data.map(item => `
                 <tr class="group hover:bg-slate-50/50 transition-all border-b border-slate-50">
-                    <td class="px-8 py-8">
-                        <div class="text-[9px] font-bold text-slate-300 font-mono tracking-tighter uppercase mb-1">${item.id || 'CAT-XX'}</div>
-                        <div class="font-bold text-slate-700 text-lg tracking-tight">${item.institution}</div>
+                    <td class="p-10">
+                        <div class="text-[11px] font-black text-slate-400 font-mono tracking-widest uppercase mb-3">${item.id || 'CAT-XX'}</div>
+                        <div class="font-black text-slate-800 text-2xl tracking-tight leading-tight">${item.institution}</div>
                     </td>
-                    <td class="px-8 py-8">
-                        <div class="flex items-center space-x-4">
-                            <div class="flex-1 bg-slate-100 h-2.5 rounded-full overflow-hidden min-w-[120px]">
-                                <div class="h-full transition-all duration-1000" style="width:${item.progress}%; background-color: #00aff0;"></div>
+                    <td class="p-10">
+                        <div class="flex items-center justify-center space-x-8">
+                            <div class="flex-1 bg-slate-100 h-5 rounded-full overflow-hidden max-w-[250px] border border-slate-200 shadow-inner">
+                                <div class="h-full transition-all duration-1000 shadow-lg" style="width:${item.progress}%; background-color: #00aff0;"></div>
                             </div>
-                            <span class="text-sm font-bold text-slate-500">${item.progress}%</span>
+                            <span class="text-lg font-black text-slate-700">${item.progress}%</span>
                         </div>
                     </td>
-                    <td class="px-8 py-8 text-right">
-                        <button onclick="openModal('${item.id}')" class="px-6 py-3 border border-[#00aff0]/20 text-[#00aff0] rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-[#00aff0] hover:text-white transition-all shadow-sm active:scale-95">
+                    <td class="p-10 text-right">
+                        <button onclick="openModal('${item.id}')" class="px-10 py-4 border border-[#00aff0]/20 text-[#00aff0] rounded-[1.5rem] text-[11px] font-black uppercase tracking-widest hover:bg-[#00aff0] hover:text-white transition-all shadow-sm active:scale-95">
                             Gestionar
                         </button>
                     </td>
@@ -298,17 +293,19 @@
             lucide.createIcons();
         }
 
-        // --- IA ---
         async function analyzeInstitutionalBarrier() {
             const text = document.getElementById('ai-input').value;
             const btn = document.getElementById('ai-btn');
             const resDiv = document.getElementById('ai-result');
             const token = await firebase.auth().currentUser.getIdToken();
+
             if (!text.trim()) return;
+            
             btn.disabled = true; 
             resDiv.classList.remove('hidden'); 
-            resDiv.innerHTML = '<div class="flex items-center font-bold text-slate-400"><i data-lucide="refresh-cw" class="animate-spin mr-3 w-5 h-5"></i> Procesando vectores PIDA...</div>';
+            resDiv.innerHTML = '<div class="flex items-center font-bold text-2xl text-slate-400"><i data-lucide="refresh-cw" class="animate-spin mr-5 w-8 h-8"></i> Procesando vectores PIDA...</div>';
             lucide.createIcons();
+
             try {
                 const res = await fetch('/api/ai/analyze', {
                     method: 'POST',
@@ -318,30 +315,33 @@
                 const data = await res.json();
                 resDiv.innerText = data.analysis;
             } catch (e) {
-                resDiv.innerText = "Error de conexión con el motor IA.";
+                resDiv.innerText = "Error crítico en el motor de incidencia IA.";
             } finally {
                 btn.disabled = false;
                 lucide.createIcons();
             }
         }
 
-        // --- ADMIN ---
         async function loadPendingAdminQueue() {
             const token = await firebase.auth().currentUser.getIdToken();
             const res = await fetch('/api/admin/pending', { headers: { 'Authorization': `Bearer ${token}` } });
             const data = await res.json();
+            
             if (data.length > 0) {
                 const container = document.getElementById('admin-pending-container');
                 container.innerHTML = data.map(sub => `
-                    <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-lg flex justify-between items-center border-l-8 border-l-[#00aff0]">
-                        <div class="flex-1 pr-6">
-                            <div class="text-[9px] font-bold text-[#00aff0] uppercase tracking-widest mb-2">${sub.recommendation_id}</div>
-                            <h4 class="text-xl font-bold text-slate-800 mb-3 leading-snug">${sub.description}</h4>
-                            <p class="text-[10px] text-slate-400 font-bold italic uppercase">Remitente: ${sub.submitted_by}</p>
+                    <div class="bg-white p-12 rounded-[3.5rem] border border-slate-100 shadow-2xl flex justify-between items-center border-l-[16px] border-l-[#00aff0]">
+                        <div class="max-w-2xl">
+                            <div class="text-[11px] font-black text-[#00aff0] uppercase tracking-[0.2em] mb-4">${sub.recommendation_id}</div>
+                            <h4 class="text-2xl font-black text-slate-800 mb-4 leading-tight">${sub.description}</h4>
+                            <p class="text-sm text-slate-400 font-bold mb-8 italic">Remitente: ${sub.submitted_by}</p>
+                            <a href="${sub.file_url}" target="_blank" class="px-8 py-4 bg-slate-50 text-slate-600 rounded-2xl text-[11px] font-black uppercase border border-slate-200 inline-flex items-center hover:bg-slate-100 transition-all">
+                                <i data-lucide="external-link" class="w-4 h-4 mr-3"></i> Examinar Evidencia Técnica
+                            </a>
                         </div>
-                        <div class="flex space-x-3">
-                            <a href="${sub.file_url}" target="_blank" class="p-4 bg-slate-50 text-slate-400 rounded-2xl hover:text-[#00aff0] transition-all"><i data-lucide="eye" class="w-6 h-6"></i></a>
-                            <button class="px-6 py-4 bg-[#00aff0] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg">Aprobar</button>
+                        <div class="flex flex-col space-y-4">
+                            <button class="px-10 py-5 text-white rounded-[1.5rem] text-[11px] font-black uppercase shadow-xl hover:opacity-90 transition-all" style="background-color: #00aff0;">Validar Avance</button>
+                            <button class="px-10 py-5 border border-slate-200 rounded-[1.5rem] text-[11px] font-black uppercase text-slate-300 hover:bg-red-50 hover:text-red-500 transition-all">Denegar</button>
                         </div>
                     </div>
                 `).join('');
@@ -349,52 +349,92 @@
             }
         }
 
-        // --- UPLOAD ---
         async function processEvidenceUpload() {
             const btn = document.getElementById('btn-submit-ev');
             const fileInput = document.getElementById('modal-file');
             const token = await firebase.auth().currentUser.getIdToken();
             const recommendationId = document.getElementById('modal-rec-id').value;
             const description = document.getElementById('modal-desc').value;
-            if (!fileInput.files[0] || !recommendationId) { alert("Complete todos los campos."); return; }
-            btn.disabled = true; btn.innerText = "Sincronizando...";
+
+            if (!fileInput.files[0] || !recommendationId) {
+                alert("Por favor, seleccione un archivo PDF.");
+                return;
+            }
+            
+            btn.disabled = true; 
+            btn.innerText = "Sincronizando con Storage...";
+            
             const formData = new FormData();
             formData.append('recommendation_id', recommendationId);
             formData.append('description', description);
             formData.append('file', fileInput.files[0]);
+
             try {
-                const res = await fetch('/api/evidence/upload', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
+                const res = await fetch('/api/evidence/upload', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
                 const result = await res.json();
-                if (res.status === 422) { alert("Error de validación de campos."); } 
-                else { alert("Éxito: Datos sincronizados."); closeModal(); }
-            } catch (e) { alert("Falla de red."); } finally { btn.disabled = false; btn.innerText = "Sincronizar Datos"; }
+                
+                if (res.status === 422) {
+                    alert("Error 422: Verifique los campos técnicos.");
+                } else {
+                    alert("Evidencia cargada correctamente.");
+                    closeModal();
+                }
+            } catch (e) {
+                alert("Falla crítica en la red.");
+            } finally {
+                btn.disabled = false; 
+                btn.innerText = "Sincronizar Evidencia";
+            }
         }
 
-        // --- UI HELPERS ---
-        function openModal(id) { document.getElementById('modal-rec-id').value = id; document.getElementById('upload-modal').classList.remove('hidden'); }
-        function closeModal() { document.getElementById('upload-modal').classList.add('hidden'); }
+        function openModal(id) { 
+            document.getElementById('modal-rec-id').value = id; 
+            document.getElementById('upload-modal').classList.remove('hidden'); 
+        }
+        
+        function closeModal() { 
+            document.getElementById('upload-modal').classList.add('hidden'); 
+        }
+
         function switchTab(tabId, el) {
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
             el.classList.add('active');
         }
+
         async function handleLogin() {
             const email = document.getElementById('login-email').value;
             const pass = document.getElementById('login-pass').value;
             const btn = document.getElementById('btn-login');
+            
             btn.disabled = true; btn.innerText = "Verificando...";
-            try { await firebase.auth().signInWithEmailAndPassword(email, pass); } 
-            catch (e) { alert("Acceso fallido: " + e.message); btn.disabled = false; btn.innerText = "Iniciar Sesión"; }
+            try { 
+                await firebase.auth().signInWithEmailAndPassword(email, pass); 
+            } catch (e) { 
+                alert("Acceso denegado: " + e.message); 
+                btn.disabled = false; btn.innerText = "Iniciar Sesión";
+            }
         }
-        function handleLogout() { firebase.auth().signOut(); window.location.reload(); }
+
+        function handleLogout() { 
+            firebase.auth().signOut(); 
+            window.location.reload(); 
+        }
+
         async function downloadOfficialReport() {
             const token = await firebase.auth().currentUser.getIdToken();
             const res = await fetch('/api/report/generate', { headers: { 'Authorization': `Bearer ${token}` } });
             const blob = await res.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = url; a.download = "Reporte_Auditoria_SPT.pdf"; a.click();
+            a.href = url;
+            a.download = "Informe_Auditoria_SPT.pdf";
+            a.click();
         }
     </script>
 </body>
