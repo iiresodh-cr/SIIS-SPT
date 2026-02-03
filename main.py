@@ -61,7 +61,7 @@ async def get_current_user(request: Request) -> Dict[str, Any]:
         decoded_token = auth.verify_id_token(token)
         email = decoded_token.get("email")
         
-        # Consulta dinámica a la colección 'users' establecida por el usuario
+        # Consulta dinámica a la colección 'users' establecida en Firestore
         user_ref = db.collection("artifacts").document(APP_ID).collection("users").document(email)
         user_doc = user_ref.get()
         
@@ -118,7 +118,7 @@ async def analyze_barrier(data: BarrierInput, user=Depends(get_current_user)):
         logger.error(f"FALLO CRÍTICO IA ({MODEL_NAME}): {str(e)}")
         raise HTTPException(
             status_code=500, 
-            detail=f"Error en Vertex AI con el modelo {MODEL_NAME}. Verifique disponibilidad en {LOCATION}."
+            detail=f"Error en Vertex AI con el modelo {MODEL_NAME}."
         )
 
 @app.post("/api/evidence/upload")
@@ -145,6 +145,7 @@ async def upload_evidence(
         })
         return {"message": "Evidencia subida correctamente"}
     except Exception as e:
+        logger.error(f"Error en carga: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/admin/pending")
