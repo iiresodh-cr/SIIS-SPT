@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+google-cloud-firestore
+google-cloud-aiplatform
+firebase-admin
+pydantic
