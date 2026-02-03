@@ -1,6 +1,6 @@
 import os
 import io
-from fastapi import FastAPI, Depends, HTTPException, status, Request, UploadFile, File, Form
+from fastapi import FastAPI, Depends, HTTPException, Request, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, StreamingResponse
@@ -35,58 +35,83 @@ async def get_user(request: Request):
         raise HTTPException(status_code=401)
     token = auth_header.split("Bearer ")[1]
     try:
-        # Aquí verificamos el token y podemos extraer claims de rol/institución
-        return auth.verify_id_token(token)
+        decoded = auth.verify_id_token(token)
+        # Identificamos si es administrador por el dominio del correo
+        decoded["is_admin"] = decoded.get("email", "").endswith("@mnpt.go.cr")
+        return decoded
     except:
         raise HTTPException(status_code=401)
 
-# --- API ---
+# --- ENDPOINTS ---
+
 @app.get("/api/recommendations")
 async def list_recommendations(user=Depends(get_user)):
-    """Si es admin ve todo. Si es institución, solo ve lo suyo."""
-    try:
-        query = db.collection("artifacts").document(APP_ID).collection("public").document("data").collection("recommendations")
-        
-        # Lógica de prevención de contaminación
-        if user.get("role") != "admin":
-            # Filtra por la institución asignada al usuario
-            docs = query.where("institution", "==", user.get("institution")).stream()
-        else:
-            docs = query.stream()
-            
-        return [doc.to_dict() for doc in docs]
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    """Evita la contaminación: Usuarios normales solo ven lo de su institución."""
+    ref = db.collection("artifacts").document(APP_ID).collection("public").document("data").collection("recommendations")
+    docs = ref.stream()
+    all_recs = [doc.to_dict() for doc in docs]
+    
+    if user["is_admin"]:
+        return all_recs
+    
+    # Lógica de filtrado institucional para usuarios no-admin
+    # Se asume que el correo o un atributo del usuario indica su institución
+    user_inst = user.get("email", "").split("@")[1].split(".")[0] # Ejemplo simple
+    return [r for r in all_recs if user_inst in r.get("institution", "").lower()]
+
+@app.post("/api/ai/analyze")
+async def analyze(data: dict, user=Depends(get_user)):
+    model = GenerativeModel("gemini-1.5-flash")
+    prompt = f"Como asesor del MNPT Costa Rica, analiza esta barrera: {data['text']}. Da 3 soluciones."
+    return {"analysis": model.generate_content(prompt).text}
+
+@app.post("/api/evidence/upload")
+async def upload(
+    recommendation_id: str = Form(...), 
+    description: str = Form(...),
+    file: UploadFile = File(...), 
+    user=Depends(get_user)
+):
+    bucket = storage_client.bucket(BUCKET_NAME)
+    blob = bucket.blob(f"evidence/{recommendation_id}/{file.filename}")
+    blob.upload_from_file(file.file, content_type=file.content_type)
+    
+    # Registro para revisión del administrador
+    sub_ref = db.collection("artifacts").document(APP_ID).collection("submissions").document()
+    sub_ref.set({
+        "recommendation_id": recommendation_id,
+        "submitted_by": user["email"],
+        "file_url": blob.public_url,
+        "description": description,
+        "status": "PENDING",
+        "timestamp": firestore.SERVER_TIMESTAMP
+    })
+    return {"message": "Evidencia subida. Pendiente de validación MNPT."}
 
 @app.get("/api/report/generate")
-async def make_pdf(user=Depends(get_user)):
-    """Genera el informe oficial para el SPT."""
-    docs = db.collection("artifacts").document(APP_ID).collection("public").document("data").collection("recommendations").stream()
+async def report(user=Depends(get_user)):
+    """Genera el informe oficial en PDF."""
+    recs = db.collection("artifacts").document(APP_ID).collection("public").document("data").collection("recommendations").stream()
     buffer = io.BytesIO()
     p = canvas.Canvas(buffer, pagesize=letter)
-    p.setFont("Helvetica-Bold", 14)
-    p.drawString(100, 750, "INFORME SIIS-SPT: CUMPLIMIENTO COSTA RICA")
+    p.setFont("Helvetica-Bold", 16)
+    p.drawString(100, 750, "Informe de Cumplimiento SIIS-SPT")
     y = 720
-    for doc in docs:
+    for doc in recs:
         d = doc.to_dict()
         p.setFont("Helvetica-Bold", 10)
         p.drawString(100, y, f"[{d['id']}] {d['institution']}")
         p.setFont("Helvetica", 10)
-        p.drawString(100, y-15, f"Estado: {d['status']} - Avance: {d['progress']}%")
-        y -= 40
+        p.drawString(100, y-15, f"Progreso: {d.get('progress', 0)}% - Estado: {d.get('status', 'Pendiente')}")
+        y -= 45
+        if y < 100: p.showPage(); y = 750
     p.save()
     buffer.seek(0)
     return StreamingResponse(buffer, media_type="application/pdf")
 
-# Servir Frontend
 if os.path.exists("static"):
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/")
-async def index():
+async def home():
     return FileResponse("static/index.html")
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8080)
-    
