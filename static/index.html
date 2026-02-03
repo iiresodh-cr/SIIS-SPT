@@ -3,42 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SIIS-SPT | MNPT Costa Rica</title>
+    <title>SIIS-SPT | Sistema de Monitoreo</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 </head>
-<body class="bg-gray-50 flex h-screen overflow-hidden font-sans text-slate-900">
+<body class="bg-gray-50 flex h-screen overflow-hidden text-slate-900">
 
     <div id="login-screen" class="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center p-4">
-        <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center">
-            <h1 class="text-2xl font-bold mb-6 text-slate-800">SIIS-SPT Login</h1>
+        <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full">
+            <h1 class="text-2xl font-bold text-center mb-6">SIIS-SPT</h1>
             <input type="email" id="login-email" placeholder="Correo" class="w-full p-3 border rounded-lg mb-3 outline-none focus:ring-2 focus:ring-blue-500">
             <input type="password" id="login-pass" placeholder="Contraseña" class="w-full p-3 border rounded-lg mb-6 outline-none focus:ring-2 focus:ring-blue-500">
-            <button onclick="handleLogin()" class="w-full bg-blue-600 text-white p-3 rounded-lg font-bold hover:bg-blue-700 transition">Ingresar</button>
+            <button onclick="handleLogin()" class="w-full bg-blue-600 text-white p-3 rounded-lg font-bold hover:bg-blue-700">Acceder</button>
         </div>
     </div>
 
     <aside class="w-64 bg-slate-900 text-white flex flex-col shrink-0">
         <div class="p-6 border-b border-slate-800 text-blue-400 font-bold text-xl">SIIS-SPT</div>
         <nav class="flex-1 p-4 space-y-2">
-            <button onclick="showTab('dashboard')" class="w-full flex items-center p-3 rounded-lg hover:bg-slate-800 transition"><i data-lucide="layout-dashboard" class="mr-3"></i> Auditoría</button>
-            <button onclick="showTab('laboratorio')" class="w-full flex items-center p-3 rounded-lg hover:bg-slate-800 transition"><i data-lucide="brain" class="mr-3"></i> Incidencia IA</button>
+            <button onclick="showTab('dashboard')" class="w-full flex items-center p-3 rounded-lg hover:bg-slate-800"><i data-lucide="layout-dashboard" class="mr-3"></i> Dashboard</button>
+            <button onclick="showTab('laboratorio')" class="w-full flex items-center p-3 rounded-lg hover:bg-slate-800"><i data-lucide="brain" class="mr-3"></i> Laboratorio IA</button>
             <button onclick="handleLogout()" class="w-full flex items-center p-3 rounded-lg text-red-400 mt-10 hover:bg-red-900/20"><i data-lucide="log-out" class="mr-3"></i> Salir</button>
         </nav>
     </aside>
 
     <main class="flex-1 overflow-y-auto p-8">
         <div id="dashboard" class="tab-content">
-            <h2 class="text-2xl font-bold mb-6">Monitoreo de Recomendaciones </h2>
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-2xl font-bold">Estado de Recomendaciones</h2>
+                <button onclick="downloadReport()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg font-bold flex items-center hover:bg-emerald-700">
+                    <i data-lucide="file-down" class="mr-2"></i> Informe PDF
+                </button>
+            </div>
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <table class="w-full text-left">
                     <thead class="bg-gray-50 border-b">
                         <tr>
-                            <th class="p-4 text-xs font-bold text-gray-500 uppercase">Institución</th>
-                            <th class="p-4 text-xs font-bold text-gray-500 uppercase">Avance Oficial</th>
-                            <th class="p-4 text-xs font-bold text-gray-500 uppercase">Acción</th>
+                            <th class="p-4 text-xs font-bold text-gray-400 uppercase">Institución</th>
+                            <th class="p-4 text-xs font-bold text-gray-400 uppercase">Avance Oficial</th>
+                            <th class="p-4 text-xs font-bold text-gray-400 uppercase">Gestión</th>
                         </tr>
                     </thead>
                     <tbody id="recommendations-list"></tbody>
@@ -47,11 +52,11 @@
         </div>
 
         <div id="laboratorio" class="tab-content hidden">
-            <h2 class="text-2xl font-bold mb-6">Laboratorio de Incidencia Política [cite: 11]</h2>
+            <h2 class="text-2xl font-bold mb-6">Laboratorio de Incidencia</h2>
             <div class="bg-white p-6 rounded-xl border border-gray-200 max-w-2xl shadow-sm">
-                <textarea id="ai-input" class="w-full h-40 p-4 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Describa el obstáculo institucional (ej. falta de voluntad política)..."></textarea>
+                <textarea id="ai-input" class="w-full h-40 p-4 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Describa el obstáculo institucional..."></textarea>
                 <button onclick="callAI()" id="ai-btn" class="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center font-bold">
-                    <i data-lucide="zap" class="mr-2"></i> Analizar Barreras
+                    <i data-lucide="zap" class="mr-2"></i> Analizar Estrategia
                 </button>
                 <div id="ai-result" class="mt-6 p-6 bg-blue-50 text-blue-900 rounded-lg hidden border-l-4 border-blue-500 whitespace-pre-wrap"></div>
             </div>
@@ -59,12 +64,12 @@
 
         <div id="upload-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-[60]">
             <div class="bg-white p-6 rounded-xl max-w-md w-full shadow-2xl">
-                <h3 class="text-lg font-bold mb-4">Adjuntar Evidencia de Avance</h3>
+                <h3 class="text-lg font-bold mb-4">Cargar Evidencia Técnica</h3>
                 <input type="hidden" id="modal-rec-id">
-                <textarea id="modal-description" class="w-full p-3 border rounded mb-4" placeholder="¿Qué se logró con esta evidencia?"></textarea>
-                <input type="file" id="modal-file" class="block w-full text-sm text-gray-500 mb-6 border p-2 rounded">
+                <textarea id="modal-description" class="w-full p-3 border rounded mb-4" placeholder="Acciones realizadas..."></textarea>
+                <input type="file" id="modal-file" class="block w-full text-sm mb-6 border p-2 rounded">
                 <div class="flex space-x-3">
-                    <button onclick="closeModal()" class="flex-1 py-2 border rounded-lg hover:bg-gray-50">Cerrar</button>
+                    <button onclick="closeModal()" class="flex-1 py-2 border rounded-lg hover:bg-gray-50">Cancelar</button>
                     <button onclick="submitEvidence()" id="submit-ev-btn" class="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Subir</button>
                 </div>
             </div>
@@ -104,15 +109,10 @@
             const data = await res.json();
             const list = document.getElementById('recommendations-list');
             list.innerHTML = data.map(item => `
-                <tr class="border-b hover:bg-gray-50">
-                    <td class="p-4"><div class="font-bold">${item.institution}</div><div class="text-xs text-slate-500">${item.id}</div></td>
-                    <td class="p-4">
-                        <div class="flex items-center">
-                            <div class="w-24 bg-gray-200 h-1.5 rounded-full mr-3"><div class="bg-blue-600 h-1.5 rounded-full" style="width:${item.progress}%"></div></div>
-                            <span class="text-xs font-bold">${item.progress}%</span>
-                        </div>
-                    </td>
-                    <td class="p-4"><button onclick="openModal('${item.id}')" class="text-blue-600 text-xs font-bold uppercase underline">Evidencia</button></td>
+                <tr class="border-b hover:bg-gray-50 transition">
+                    <td class="p-4"><div class="font-bold">${item.institution}</div><div class="text-[10px] text-slate-400 uppercase">${item.id}</div></td>
+                    <td class="p-4"><div class="flex items-center"><div class="w-24 bg-gray-200 h-1.5 rounded-full mr-3"><div class="bg-blue-600 h-1.5 rounded-full" style="width:${item.progress}%"></div></div><span class="text-xs font-bold">${item.progress}%</span></div></td>
+                    <td class="p-4"><button onclick="openModal('${item.id}')" class="text-blue-600 text-xs font-bold underline">Reportar</button></td>
                 </tr>
             `).join('');
             lucide.createIcons();
@@ -132,8 +132,8 @@
             const file = document.getElementById('modal-file').files[0];
             const token = await firebase.auth().currentUser.getIdToken();
 
-            if(!file) return alert("Seleccione un archivo");
-            btn.disabled = true; btn.innerText = "Subiendo...";
+            if(!file) return alert("Seleccione archivo");
+            btn.disabled = true; btn.innerText = "Cargando...";
 
             const formData = new FormData();
             formData.append('recommendation_id', recId);
@@ -141,16 +141,15 @@
             formData.append('file', file);
 
             try {
-                const res = await fetch('/api/evidence/upload', {
+                await fetch('/api/evidence/upload', {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}` },
                     body: formData
                 });
-                const data = await res.json();
-                alert(data.message);
+                alert("Enviado para revisión");
                 closeModal();
                 loadData();
-            } catch (e) { alert("Error en el servidor"); }
+            } catch (e) { alert("Error"); }
             finally { btn.disabled = false; btn.innerText = "Subir"; }
         }
 
@@ -159,9 +158,7 @@
             const btn = document.getElementById('ai-btn');
             const resDiv = document.getElementById('ai-result');
             const token = await firebase.auth().currentUser.getIdToken();
-            
-            btn.disabled = true; resDiv.classList.remove('hidden'); resDiv.innerText = "Generando estrategia estratégica...";
-
+            btn.disabled = true; resDiv.classList.remove('hidden'); resDiv.innerText = "IA procesando...";
             const res = await fetch('/api/ai/analyze', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -170,6 +167,14 @@
             const data = await res.json();
             resDiv.innerText = data.analysis;
             btn.disabled = false;
+        }
+
+        async function downloadReport() {
+            const token = await firebase.auth().currentUser.getIdToken();
+            const res = await fetch('/api/report/generate', { headers: { 'Authorization': `Bearer ${token}` } });
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = "Informe_SIIS_SPT.pdf"; a.click();
         }
 
         function showTab(id) {
