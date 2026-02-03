@@ -6,4 +6,4 @@ google-cloud-aiplatform
 firebase-admin
 pydantic
 python-multipart
-gunicorn
+reportlab
