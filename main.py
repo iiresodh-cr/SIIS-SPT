@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI, Depends, HTTPException, Security, status
+from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from google.cloud import firestore
@@ -8,7 +8,7 @@ from vertexai.generative_models import GenerativeModel
 import firebase_admin
 from firebase_admin import auth
 
-# --- CONFIGURACIÓN ---
+# --- CONFIGURACIÓN DE ENTORNO ---
 PROJECT_ID = os.getenv("GCP_PROJECT_ID", "siis-stp")
 LOCATION = os.getenv("GCP_LOCATION", "us-central1")
 MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "gemini-1.5-flash")
@@ -34,66 +34,62 @@ vertexai.init(project=PROJECT_ID, location=LOCATION)
 class BarrierInput(BaseModel):
     text: str
 
-# --- SEGURIDAD CORREGIDA ---
-# Eliminamos tipos complejos en la firma para evitar fallos de inspección
-async def get_current_user(authorization: str = Security(None)):
-    if not authorization or not authorization.startswith("Bearer "):
+# --- SEGURIDAD (MÉTODO ALTERNATIVO PARA EVITAR VALUEERROR) ---
+async def validate_user_session(request: Request):
+    """
+    Se usa 'Request' directamente en lugar de 'Security(None)'. 
+    Esto evita que FastAPI intente inspeccionar la firma de la clase 'str'.
+    """
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Header de autorización inválido"
+            detail="Falta token de autorización"
         )
     
-    token = authorization.split("Bearer ")[1]
+    token = auth_header.split("Bearer ")[1]
     try:
-        # Esto devuelve un diccionario con los datos del usuario
+        # Retorna los datos decodificados del usuario de Firebase
         return auth.verify_id_token(token)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Error de token: {str(e)}"
+            detail=f"Sesión expirada o inválida: {str(e)}"
         )
 
 # --- ENDPOINTS ---
 
 @app.get("/recommendations")
-async def list_recommendations(user=Depends(get_current_user)):
+async def get_recommendations(user_data=Depends(validate_user_session)):
     """
-    Lista el estado de cumplimiento del 100% de las recomendaciones[cite: 37].
+    Lista las recomendaciones cargadas para el MNPT.
     """
     try:
-        # Referencia exacta: /artifacts/siis-spt-cr/public/data/recommendations
-        docs = db.collection("artifacts") \
-                 .document(APP_ID) \
-                 .collection("public") \
-                 .document("data") \
-                 .collection("recommendations").stream()
+        # Estructura: /artifacts/siis-spt-cr/public/data/recommendations
+        collection_path = f"artifacts/{APP_ID}/public/data/recommendations"
+        docs = db.collection(collection_path).stream()
         
-        results = []
-        for doc in docs:
-            results.append(doc.to_dict())
-        return results
+        return [doc.to_dict() for doc in docs]
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Error en base de datos: {str(e)}")
 
 @app.post("/ai/analyze")
-async def analyze_barrier(data: BarrierInput, user=Depends(get_current_user)):
+async def analyze_with_gemini(data: BarrierInput, user_data=Depends(validate_user_session)):
     """
-    Usa IA para generar estrategias contra la falta de voluntad política 
-    o recursos[cite: 19, 20].
+    Analiza barreras como la falta de voluntad política o recursos usando IA[cite: 10, 11].
     """
     try:
         model = GenerativeModel(MODEL_NAME)
         prompt = (
-            f"Contexto: Proyecto SIIS-SPT Costa Rica para el MNPT[cite: 3, 7]. "
-            f"Problema: {data.text}. "
-            f"Tarea: Genera una estrategia de incidencia política basada en evidencia "
-            f"para superar esta barrera institucional[cite: 32]."
+            f"Actúa como un experto en el OPCAT para el SIIS-SPT[cite: 3]. "
+            f"Analiza este obstáculo institucional: {data.text}[cite: 15, 18]. "
+            f"Genera una estrategia de incidencia política para el MNPT de Costa Rica[cite: 32]."
         )
         response = model.generate_content(prompt)
         return {"analysis": response.text}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Error en Gemini: {str(e)}")
 
-@app.get("/")
-async def root():
-    return {"message": "SIIS-SPT API activa"}
+@app.get("/health")
+async def health():
+    return {"status": "ok", "app": "SIIS-SPT"}
