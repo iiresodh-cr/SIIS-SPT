@@ -1,6 +1,5 @@
 import os
-from typing import List
-from fastapi import FastAPI, Depends, HTTPException, status, Request, UploadFile, File
+from fastapi import FastAPI, Depends, HTTPException, status, Request, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -34,7 +33,7 @@ db = firestore.Client(project=PROJECT_ID)
 storage_client = storage.Client(project=PROJECT_ID)
 vertexai.init(project=PROJECT_ID, location=LOCATION)
 
-# --- MODELOS DE DATOS ---
+# --- MODELOS ---
 class BarrierInput(BaseModel):
     text: str
 
@@ -54,7 +53,7 @@ async def validate_user_session(request: Request):
     except:
         raise HTTPException(status_code=401, detail="Sesión inválida")
 
-# --- ENDPOINTS DE API ---
+# --- ENDPOINTS API ---
 
 @app.get("/api/recommendations")
 async def get_recommendations(user_data=Depends(validate_user_session)):
@@ -68,7 +67,7 @@ async def get_recommendations(user_data=Depends(validate_user_session)):
 async def analyze_with_gemini(data: BarrierInput, user_data=Depends(validate_user_session)):
     try:
         model = GenerativeModel(MODEL_NAME)
-        prompt = f"Como experto en OPCAT para el MNPT Costa Rica, analiza este obstáculo: {data.text}. Propón 3 estrategias de incidencia."
+        prompt = f"Como experto en OPCAT para el MNPT Costa Rica, analiza este obstáculo: {data.text}. Propón estrategias de incidencia política."
         response = model.generate_content(prompt)
         return {"analysis": response.text}
     except Exception as e:
@@ -76,50 +75,46 @@ async def analyze_with_gemini(data: BarrierInput, user_data=Depends(validate_use
 
 @app.post("/api/evidence/upload")
 async def upload_evidence(
-    recommendation_id: str, 
-    description: str,
+    recommendation_id: str = Form(...), 
+    description: str = Form(...),
     file: UploadFile = File(...), 
     user_data=Depends(validate_user_session)
 ):
-    """Sube evidencia y solicita pre-evaluación de la IA."""
+    """Sube evidencia física y solicita pre-evaluación de la IA."""
     try:
-        # 1. Subir a Cloud Storage
         bucket = storage_client.bucket(BUCKET_NAME)
         blob = bucket.blob(f"evidence/{recommendation_id}/{file.filename}")
         blob.upload_from_file(file.file, content_type=file.content_type)
-        file_url = blob.public_url
-
-        # 2. Pre-evaluación preliminar (IA)
+        
+        # Pre-evaluación IA para ayudar al administrador
         model = GenerativeModel(MODEL_NAME)
-        prompt = f"Analiza esta descripción de evidencia para la recomendación {recommendation_id}: '{description}'. Basado en el informe del SPT, ¿qué porcentaje estimado de cumplimiento representa? Responde solo el número."
+        prompt = f"Evalúa esta evidencia para la recomendación {recommendation_id}: '{description}'. ¿Qué avance representa del 0 al 100? Responde solo el número."
         ai_suggestion = model.generate_content(prompt).text.strip()
 
-        # 3. Guardar registro en Firestore para revisión administrativa
         sub_ref = db.collection("artifacts").document(APP_ID).collection("submissions").document()
         sub_ref.set({
             "recommendation_id": recommendation_id,
             "submitted_by": user_data['email'],
-            "file_url": file_url,
+            "file_url": blob.public_url,
             "description": description,
             "ai_suggestion": ai_suggestion,
             "status": "PENDING_REVIEW"
         })
-        return {"message": "Evidencia subida. Pendiente de validación por el MNPT."}
+        return {"message": "Evidencia subida correctamente. Pendiente de validación MNPT."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/admin/approve")
 async def approve_recommendation(data: ApprovalInput, user_data=Depends(validate_user_session)):
-    """Visto bueno administrativo del MNPT para oficializar el avance."""
+    """Valida oficialmente el progreso (Solo Administradores MNPT)"""
     try:
         rec_ref = db.collection("artifacts").document(APP_ID).collection("public").document("data").collection("recommendations").document(data.recommendation_id)
         rec_ref.update({
             "progress": data.approved_progress,
             "status": "Validado" if data.approved_progress == 100 else "En Proceso",
-            "last_review_by": user_data['email'],
-            "admin_notes": data.admin_notes
+            "last_review_by": user_data['email']
         })
-        return {"message": "Progreso validado oficialmente."}
+        return {"message": "Progreso validado y publicado oficialmente."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
