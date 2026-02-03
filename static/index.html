@@ -145,7 +145,7 @@
         <div id="laboratorio" class="tab-content">
             <div class="max-w-4xl mx-auto">
                 <h2 class="text-6xl font-black text-slate-800 mb-4 tracking-tighter">Incidencia IA</h2>
-                <p class="text-slate-500 mb-12 text-xl font-medium">Análisis estratégico mediante PIDA (Gemini-2.5-Flash).</p>
+                <p class="text-slate-500 mb-12 text-xl font-medium">Análisis estratégico mediante PIDA.</p>
                 
                 <div class="bg-white p-14 rounded-[3.5rem] border border-slate-200 shadow-2xl">
                     <div class="mb-10">
@@ -153,9 +153,7 @@
                         <textarea id="ai-input" class="w-full h-64 p-10 bg-slate-50 border-0 rounded-[2.5rem] focus:ring-4 focus:ring-blue-500/10 outline-none transition-all text-2xl leading-relaxed" placeholder="Ej: No existe voluntad política para reformar el reglamento interno..."></textarea>
                     </div>
                     
-                    <button onclick="analyzeInstitutionalBarrier()" id="ai-btn" class="w-full bg-slate-900 text-white py-7 rounded-[2rem] hover:bg-black font-black text-xl uppercase tracking-widest shadow-2xl transition-all active:scale-95 flex items-center justify-center">
-                        <i data-lucide="zap" class="mr-4 w-7 h-7 text-yellow-400"></i> Ejecutar Análisis Gemini
-                    </button>
+                    <button onclick="analyzeInstitutionalBarrier()" id="ai-btn" class="w-full bg-slate-900 text-white py-7 rounded-[2rem] hover:bg-black font-black text-xl uppercase tracking-widest shadow-2xl transition-all active:scale-95 flex items-center justify-center">Ejecutar Análisis PIDA</button>
                     
                     <div id="ai-result" class="mt-14 p-12 bg-blue-50/50 text-blue-900 rounded-[3rem] hidden border-l-[16px] border-blue-500 whitespace-pre-wrap leading-loose shadow-inner text-xl">
                         </div>
