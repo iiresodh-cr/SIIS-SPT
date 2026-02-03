@@ -2,73 +2,228 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>SIIS-SPT | Auditoría</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIIS-SPT | Sistema Integral de Monitoreo</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 </head>
-<body class="bg-slate-50 flex h-screen font-sans">
+<body class="bg-slate-50 flex h-screen overflow-hidden font-sans text-slate-900">
 
-    <aside class="w-64 bg-slate-900 text-white flex flex-col">
-        <div class="p-6 font-bold text-xl text-blue-400 border-b border-slate-800">SIIS-SPT</div>
+    <div id="login-screen" class="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center p-4">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full">
+            <h1 class="text-2xl font-bold text-center mb-6">SIIS-SPT</h1>
+            <input type="email" id="login-email" placeholder="Correo" class="w-full p-3 border rounded-lg mb-3 outline-none focus:ring-2 focus:ring-blue-500">
+            <input type="password" id="login-pass" placeholder="Contraseña" class="w-full p-3 border rounded-lg mb-6 outline-none focus:ring-2 focus:ring-blue-500">
+            <button onclick="handleLogin()" class="w-full bg-blue-600 text-white p-3 rounded-lg font-bold hover:bg-blue-700 transition">Ingresar</button>
+        </div>
+    </div>
+
+    <aside class="w-64 bg-slate-900 text-white flex flex-col shrink-0">
+        <div class="p-6 border-b border-slate-800 text-blue-400 font-bold text-xl tracking-tighter">SIIS-SPT</div>
         <nav class="flex-1 p-4 space-y-2">
-            <button onclick="showTab('dashboard')" class="w-full flex items-center p-3 rounded-lg hover:bg-slate-800"><i data-lucide="shield" class="mr-3"></i> Auditoría</button>
-            <button id="admin-tab" onclick="showTab('admin')" class="w-full hidden flex items-center p-3 rounded-lg hover:bg-slate-800 text-purple-400"><i data-lucide="settings" class="mr-3"></i> Panel MNPT</button>
-            <button onclick="showTab('ia')" class="w-full flex items-center p-3 rounded-lg hover:bg-slate-800"><i data-lucide="brain" class="mr-3"></i> Incidencia IA</button>
-            <button onclick="downloadPDF()" class="w-full flex items-center p-3 rounded-lg hover:bg-emerald-900 text-emerald-400"><i data-lucide="file-text" class="mr-3"></i> Generar Informe</button>
-            <button onclick="firebase.auth().signOut()" class="w-full flex items-center p-3 rounded-lg text-red-400 mt-20"><i data-lucide="log-out" class="mr-3"></i> Salir</button>
+            <button onclick="showTab('dashboard')" class="w-full flex items-center p-3 rounded-lg hover:bg-slate-800 transition"><i data-lucide="layout-dashboard" class="mr-3"></i> Auditoría</button>
+            <button onclick="showTab('laboratorio')" class="w-full flex items-center p-3 rounded-lg hover:bg-slate-800 transition"><i data-lucide="brain" class="mr-3"></i> Incidencia IA</button>
+            <button id="admin-tab" onclick="showTab('admin')" class="w-full hidden flex items-center p-3 rounded-lg hover:bg-slate-800 text-purple-400 border border-purple-900/50"><i data-lucide="shield-check" class="mr-3"></i> Panel MNPT</button>
+            
+            <div class="pt-10 space-y-2">
+                <p class="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Reportes</p>
+                <button onclick="downloadPDF()" class="w-full flex items-center p-3 rounded-lg hover:bg-emerald-900 text-emerald-400 transition"><i data-lucide="file-down" class="mr-3"></i> Exportar SPT</button>
+            </div>
+
+            <button onclick="handleLogout()" class="w-full flex items-center p-3 rounded-lg text-red-400 mt-auto hover:bg-red-900/20 transition"><i data-lucide="log-out" class="mr-3"></i> Salir</button>
         </nav>
     </aside>
 
-    <main class="flex-1 p-10 overflow-y-auto">
+    <main class="flex-1 overflow-y-auto p-8">
+        
         <div id="dashboard" class="tab-content">
-            <h2 class="text-2xl font-bold mb-6">Monitoreo Institucional</h2>
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-slate-800">Seguimiento de Recomendaciones</h2>
+                <div id="admin-indicator" class="hidden px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-[10px] font-bold uppercase">Acceso Administrador</div>
+            </div>
+            
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 <table class="w-full text-left">
-                    <thead class="bg-slate-50 border-b border-slate-200">
-                        <tr><th class="p-4">Institución</th><th class="p-4 text-center">Avance</th><th class="p-4">Acción</th></tr>
+                    <thead class="bg-slate-50 border-b">
+                        <tr>
+                            <th class="p-4 text-xs font-bold text-slate-400 uppercase">Institución e ID</th>
+                            <th class="p-4 text-xs font-bold text-slate-400 uppercase">Progreso Oficial</th>
+                            <th class="p-4 text-xs font-bold text-slate-400 uppercase text-center">Gestión</th>
+                        </tr>
                     </thead>
-                    <tbody id="rec-list"></tbody>
+                    <tbody id="recommendations-list"></tbody>
                 </table>
             </div>
         </div>
 
+        <div id="laboratorio" class="tab-content hidden">
+            <h2 class="text-2xl font-bold mb-6 text-slate-800">Superación de Barreras con IA</h2>
+            <div class="bg-white p-8 rounded-xl border border-slate-200 max-w-2xl shadow-sm">
+                <label class="block mb-2 font-bold text-slate-700">Obstáculo Institucional Detectado:</label>
+                <textarea id="ai-input" class="w-full h-40 p-4 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="Describa la barrera (ej: Falta de presupuesto para capacitación)..."></textarea>
+                <button onclick="callAI()" id="ai-btn" class="mt-4 bg-blue-600 text-white w-full py-3 rounded-xl hover:bg-blue-700 flex items-center justify-center font-bold">
+                    <i data-lucide="zap" class="mr-2"></i> Generar Estrategia de Incidencia
+                </button>
+                <div id="ai-result" class="mt-6 p-6 bg-blue-50 text-blue-900 rounded-xl hidden border-l-4 border-blue-500 whitespace-pre-wrap leading-relaxed shadow-inner italic"></div>
+            </div>
+        </div>
+
         <div id="admin" class="tab-content hidden">
-            <h2 class="text-2xl font-bold mb-6 text-purple-700">Validación de Evidencias (MNPT)</h2>
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-purple-200">
-                <p class="text-slate-500 italic">Aquí aparecerán las evidencias subidas por las instituciones para su aprobación oficial.</p>
-                <div id="submissions-list" class="mt-4 space-y-4"></div>
+            <h2 class="text-2xl font-bold mb-6 text-purple-700">Validación Técnica MNPT</h2>
+            <div class="bg-white p-6 rounded-xl border border-purple-100 shadow-sm">
+                <p class="text-slate-500 text-sm mb-6">Revise las evidencias enviadas por las instituciones para oficializar el porcentaje de avance.</p>
+                <div id="submissions-list" class="space-y-4">
+                    </div>
+            </div>
+        </div>
+
+        <div id="upload-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-[60]">
+            <div class="bg-white p-8 rounded-2xl max-w-md w-full shadow-2xl animate-in zoom-in duration-200">
+                <h3 class="text-xl font-bold mb-2">Reportar Avance y Pruebas</h3>
+                <p class="text-xs text-slate-500 mb-6">Adjunte documentos oficiales (PDF) que respalden el progreso.</p>
+                
+                <input type="hidden" id="modal-rec-id">
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-1">Descripción de la acción:</label>
+                    <textarea id="modal-description" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" rows="3" placeholder="Detalle qué actividades se realizaron..."></textarea>
+                </div>
+
+                <div class="mb-8">
+                    <label class="block text-sm font-bold mb-1">Archivo de Evidencia:</label>
+                    <input type="file" id="modal-file" class="block w-full text-sm text-slate-500 border p-2 rounded-lg">
+                </div>
+
+                <div class="flex space-x-3">
+                    <button onclick="closeModal()" class="flex-1 py-3 border rounded-xl hover:bg-slate-50 font-bold transition">Cancelar</button>
+                    <button onclick="submitEvidence()" id="submit-ev-btn" class="flex-1 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-bold transition">Enviar Evidencia</button>
+                </div>
             </div>
         </div>
     </main>
 
     <script>
-        const firebaseConfig = { /* Tus datos de Firebase aquí */ };
+        const firebaseConfig = {
+            apiKey: "AIzaSyD0n5oY7LGk7qaqMX_PjBvHfWnaxRa1nqg",
+            authDomain: "siis-stp.firebaseapp.com",
+            projectId: "siis-stp",
+            storageBucket: "siis-stp.firebasestorage.app",
+        };
         firebase.initializeApp(firebaseConfig);
         lucide.createIcons();
 
-        firebase.auth().onAuthStateChanged(async user => {
+        firebase.auth().onAuthStateChanged(user => {
             if (user) {
-                // Simulación: Si el correo es del MNPT, mostrar panel admin
+                document.getElementById('login-screen').classList.add('hidden');
+                // Lógica Admin para el dominio mnpt.go.cr
                 if (user.email.includes("mnpt.go.cr")) {
                     document.getElementById('admin-tab').classList.remove('hidden');
+                    document.getElementById('admin-indicator').classList.remove('hidden');
                 }
-                loadRecommendations();
-            } else { window.location.href = "/login.html"; }
+                loadData();
+            } else {
+                document.getElementById('login-screen').classList.remove('hidden');
+            }
         });
 
-        async function loadRecommendations() {
+        async function handleLogin() {
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-pass').value;
+            try { await firebase.auth().signInWithEmailAndPassword(email, pass); } catch (e) { alert("Error: " + e.message); }
+        }
+
+        function handleLogout() { firebase.auth().signOut(); }
+
+        async function loadData() {
             const token = await firebase.auth().currentUser.getIdToken();
-            const res = await fetch('/api/recommendations', { headers: { 'Authorization': `Bearer ${token}` } });
-            const data = await res.json();
-            document.getElementById('rec-list').innerHTML = data.map(r => `
-                <tr class="border-b">
-                    <td class="p-4 font-bold text-slate-700">${r.institution}<div class="text-[10px] text-slate-400 font-mono">${r.id}</div></td>
-                    <td class="p-4"><div class="w-full bg-slate-200 h-2 rounded-full"><div class="bg-blue-600 h-2 rounded-full" style="width:${r.progress}%"></div></div></td>
-                    <td class="p-4"><button class="text-blue-600 font-bold uppercase text-xs">Subir Evidencia</button></td>
-                </tr>
-            `).join('');
+            try {
+                const res = await fetch('/api/recommendations', { headers: { 'Authorization': `Bearer ${token}` } });
+                const data = await res.json();
+                const list = document.getElementById('recommendations-list');
+                list.innerHTML = data.map(item => `
+                    <tr class="border-b hover:bg-slate-50/50 transition">
+                        <td class="p-4">
+                            <div class="font-bold text-slate-800">${item.institution}</div>
+                            <div class="text-[10px] text-slate-400 font-mono tracking-tighter uppercase">${item.id}</div>
+                        </td>
+                        <td class="p-4">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-32 bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                                    <div class="bg-blue-600 h-full" style="width:${item.progress}%"></div>
+                                </div>
+                                <span class="text-xs font-bold text-slate-600">${item.progress}%</span>
+                            </div>
+                            <div class="text-[9px] mt-1 font-bold ${item.status === 'Validado' ? 'text-emerald-600' : 'text-amber-600'} uppercase">${item.status}</div>
+                        </td>
+                        <td class="p-4 text-center">
+                            <button onclick="openModal('${item.id}')" class="bg-white border border-blue-200 text-blue-600 px-3 py-1 rounded-lg text-[10px] font-bold hover:bg-blue-600 hover:text-white transition uppercase">Reportar Evidencia</button>
+                        </td>
+                    </tr>
+                `).join('');
+                lucide.createIcons();
+            } catch (e) { console.error("Error al cargar datos", e); }
+        }
+
+        function openModal(id) {
+            document.getElementById('modal-rec-id').value = id;
+            document.getElementById('upload-modal').classList.remove('hidden');
+        }
+
+        function closeModal() { document.getElementById('upload-modal').classList.add('hidden'); }
+
+        async function submitEvidence() {
+            const btn = document.getElementById('submit-ev-btn');
+            const recId = document.getElementById('modal-rec-id').value;
+            const desc = document.getElementById('modal-description').value;
+            const file = document.getElementById('modal-file').files[0];
+            const token = await firebase.auth().currentUser.getIdToken();
+
+            if (!file) return alert("Debe seleccionar un archivo PDF.");
+            btn.disabled = true; btn.innerText = "Subiendo archivo...";
+
+            const formData = new FormData();
+            formData.append('recommendation_id', recId);
+            formData.append('description', desc);
+            formData.append('file', file);
+
+            try {
+                const res = await fetch('/api/evidence/upload', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+                const result = await res.json();
+                alert(result.message);
+                closeModal();
+                loadData();
+            } catch (e) { alert("Error en el servidor de carga."); }
+            finally { btn.disabled = false; btn.innerText = "Enviar Evidencia"; }
+        }
+
+        async function callAI() {
+            const text = document.getElementById('ai-input').value;
+            const btn = document.getElementById('ai-btn');
+            const resDiv = document.getElementById('ai-result');
+            const token = await firebase.auth().currentUser.getIdToken();
+
+            if (!text.trim()) return alert("Por favor describa el obstáculo.");
+            
+            btn.disabled = true; 
+            resDiv.classList.remove('hidden'); 
+            resDiv.innerText = "Consultando con la IA estratégica...";
+
+            try {
+                const res = await fetch('/api/ai/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ text })
+                });
+                const data = await res.json();
+                resDiv.innerText = data.analysis;
+            } catch (e) { resDiv.innerText = "Error en el Laboratorio de IA."; }
+            finally { btn.disabled = false; }
         }
 
         async function downloadPDF() {
@@ -76,7 +231,7 @@
             const res = await fetch('/api/report/generate', { headers: { 'Authorization': `Bearer ${token}` } });
             const blob = await res.blob();
             const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = "Reporte_SPT_CostaRica.pdf"; a.click();
+            const a = document.createElement('a'); a.href = url; a.download = "Informe_Cumplimiento_SPT.pdf"; a.click();
         }
 
         function showTab(id) {
