@@ -212,7 +212,9 @@
                 const recommendations = await res.json();
                 
                 // Determinamos permisos administrativos de IIRESODH
-                const isUserAdmin = user.email === "durquilla@iiresodh.org" || user.email.endsWith("@mnpt.go.cr");
+                const isUserAdmin = user.email === "durquilla@iiresodh.org" || 
+                   user.email === "nuevoadmin@ejemplo.com" || 
+                   user.email.endsWith("@mnpt.go.cr");
                 
                 if (isUserAdmin) {
                     document.getElementById('admin-tab').classList.remove('hidden');
