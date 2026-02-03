@@ -1,14 +1,18 @@
 import os
+import io
+from typing import List, Dict
 from fastapi import FastAPI, Depends, HTTPException, status, Request, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
 from google.cloud import firestore, storage
 import vertexai
 from vertexai.generative_models import GenerativeModel
 import firebase_admin
 from firebase_admin import auth
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
 
 # --- CONFIGURACIÓN DE ENTORNO ---
 PROJECT_ID = os.getenv("GCP_PROJECT_ID", "siis-stp")
@@ -26,6 +30,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Inicialización de servicios
 if not firebase_admin._apps:
     firebase_admin.initialize_app()
 
@@ -42,7 +47,7 @@ class ApprovalInput(BaseModel):
     approved_progress: int
     admin_notes: str
 
-# --- SEGURIDAD ---
+# --- SEGURIDAD (CORREGIDA) ---
 async def validate_user_session(request: Request):
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
@@ -57,6 +62,7 @@ async def validate_user_session(request: Request):
 
 @app.get("/api/recommendations")
 async def get_recommendations(user_data=Depends(validate_user_session)):
+    """Obtiene las observaciones/recomendaciones base de la línea de base."""
     try:
         docs = db.collection("artifacts").document(APP_ID).collection("public").document("data").collection("recommendations").stream()
         return [doc.to_dict() for doc in docs]
@@ -65,9 +71,10 @@ async def get_recommendations(user_data=Depends(validate_user_session)):
 
 @app.post("/api/ai/analyze")
 async def analyze_with_gemini(data: BarrierInput, user_data=Depends(validate_user_session)):
+    """Laboratorio de IA para análisis de barreras."""
     try:
         model = GenerativeModel(MODEL_NAME)
-        prompt = f"Como experto en OPCAT para el MNPT Costa Rica, analiza este obstáculo: {data.text}. Propón estrategias de incidencia política."
+        prompt = f"Analiza esta barrera institucional para el MNPT Costa Rica: {data.text}. Propón 3 estrategias de incidencia política."
         response = model.generate_content(prompt)
         return {"analysis": response.text}
     except Exception as e:
@@ -80,17 +87,18 @@ async def upload_evidence(
     file: UploadFile = File(...), 
     user_data=Depends(validate_user_session)
 ):
-    """Sube evidencia física y solicita pre-evaluación de la IA."""
+    """Carga de pruebas por el usuario e inferencia preliminar de la IA."""
     try:
         bucket = storage_client.bucket(BUCKET_NAME)
         blob = bucket.blob(f"evidence/{recommendation_id}/{file.filename}")
         blob.upload_from_file(file.file, content_type=file.content_type)
         
-        # Pre-evaluación IA para ayudar al administrador
+        # IA pre-evalúa el nivel de cumplimiento basado en la descripción
         model = GenerativeModel(MODEL_NAME)
-        prompt = f"Evalúa esta evidencia para la recomendación {recommendation_id}: '{description}'. ¿Qué avance representa del 0 al 100? Responde solo el número."
+        prompt = f"La institución envió esta prueba: '{description}'. ¿Qué porcentaje de avance (0-100) sugiere esto para la recomendación {recommendation_id}? Responde solo el número."
         ai_suggestion = model.generate_content(prompt).text.strip()
 
+        # Registro de la evidencia para validación del MNPT
         sub_ref = db.collection("artifacts").document(APP_ID).collection("submissions").document()
         sub_ref.set({
             "recommendation_id": recommendation_id,
@@ -98,27 +106,46 @@ async def upload_evidence(
             "file_url": blob.public_url,
             "description": description,
             "ai_suggestion": ai_suggestion,
-            "status": "PENDING_REVIEW"
+            "status": "PENDING_REVIEW",
+            "timestamp": firestore.SERVER_TIMESTAMP
         })
-        return {"message": "Evidencia subida correctamente. Pendiente de validación MNPT."}
+        return {"message": "Evidencia subida. Pendiente de validación por el administrador del MNPT."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/admin/approve")
-async def approve_recommendation(data: ApprovalInput, user_data=Depends(validate_user_session)):
-    """Valida oficialmente el progreso (Solo Administradores MNPT)"""
+@app.get("/api/report/generate")
+async def generate_pdf_report(user_data=Depends(validate_user_session)):
+    """Genera el informe oficial PDF para el SPT."""
     try:
-        rec_ref = db.collection("artifacts").document(APP_ID).collection("public").document("data").collection("recommendations").document(data.recommendation_id)
-        rec_ref.update({
-            "progress": data.approved_progress,
-            "status": "Validado" if data.approved_progress == 100 else "En Proceso",
-            "last_review_by": user_data['email']
-        })
-        return {"message": "Progreso validado y publicado oficialmente."}
+        docs = db.collection("artifacts").document(APP_ID).collection("public").document("data").collection("recommendations").stream()
+        buffer = io.BytesIO()
+        p = canvas.Canvas(buffer, pagesize=letter)
+        p.setTitle("Informe SIIS-SPT")
+        
+        p.setFont("Helvetica-Bold", 16)
+        p.drawString(100, 750, "Informe de Seguimiento SIIS-SPT Costa Rica")
+        p.setFont("Helvetica", 10)
+        p.drawString(100, 730, f"Generado para: {user_data['email']}")
+        
+        y = 700
+        for doc in docs:
+            d = doc.to_dict()
+            p.setFont("Helvetica-Bold", 11)
+            p.drawString(100, y, f"[{d.get('id', 'N/A')}] {d.get('institution', 'N/A')}")
+            y -= 15
+            p.setFont("Helvetica", 10)
+            p.drawString(100, y, f"Estado: {d.get('status', 'N/A')} | Progreso: {d.get('progress', 0)}%")
+            y -= 30
+            if y < 100:
+                p.showPage()
+                y = 750
+        p.save()
+        buffer.seek(0)
+        return StreamingResponse(buffer, media_type="application/pdf", headers={"Content-Disposition": "attachment;filename=Reporte_SIIS_SPT.pdf"})
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# --- SERVIDOR ESTÁTICO ---
+# Servir Frontend
 if os.path.exists("static"):
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
