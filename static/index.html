@@ -3,46 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SIIS-SPT | Auditoría MNPT</title>
+    <title>SIIS-SPT | MNPT Costa Rica</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 </head>
-<body class="bg-gray-50 flex h-screen overflow-hidden font-sans">
+<body class="bg-gray-50 flex h-screen overflow-hidden font-sans text-slate-900">
 
     <div id="login-screen" class="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center p-4">
-        <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full">
-            <h1 class="text-2xl font-bold text-center mb-6 text-slate-800">SIIS-SPT</h1>
-            <input type="email" id="login-email" placeholder="Correo institucional" class="w-full p-3 border rounded-lg mb-3 outline-none focus:ring-2 focus:ring-blue-500">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center">
+            <h1 class="text-2xl font-bold mb-6 text-slate-800">SIIS-SPT Login</h1>
+            <input type="email" id="login-email" placeholder="Correo" class="w-full p-3 border rounded-lg mb-3 outline-none focus:ring-2 focus:ring-blue-500">
             <input type="password" id="login-pass" placeholder="Contraseña" class="w-full p-3 border rounded-lg mb-6 outline-none focus:ring-2 focus:ring-blue-500">
-            <button onclick="handleLogin()" class="w-full bg-blue-600 text-white p-3 rounded-lg font-bold hover:bg-blue-700">Acceder</button>
+            <button onclick="handleLogin()" class="w-full bg-blue-600 text-white p-3 rounded-lg font-bold hover:bg-blue-700 transition">Ingresar</button>
         </div>
     </div>
 
     <aside class="w-64 bg-slate-900 text-white flex flex-col shrink-0">
-        <div class="p-6 border-b border-slate-800 text-blue-400 font-bold text-xl tracking-tighter">SIIS-SPT</div>
+        <div class="p-6 border-b border-slate-800 text-blue-400 font-bold text-xl">SIIS-SPT</div>
         <nav class="flex-1 p-4 space-y-2">
-            <button onclick="showTab('dashboard')" class="w-full flex items-center p-3 rounded-lg hover:bg-slate-800"><i data-lucide="layout-dashboard" class="mr-3"></i> Auditoría</button>
-            <button onclick="showTab('laboratorio')" class="w-full flex items-center p-3 rounded-lg hover:bg-slate-800"><i data-lucide="brain" class="mr-3"></i> Incidencia IA</button>
+            <button onclick="showTab('dashboard')" class="w-full flex items-center p-3 rounded-lg hover:bg-slate-800 transition"><i data-lucide="layout-dashboard" class="mr-3"></i> Auditoría</button>
+            <button onclick="showTab('laboratorio')" class="w-full flex items-center p-3 rounded-lg hover:bg-slate-800 transition"><i data-lucide="brain" class="mr-3"></i> Incidencia IA</button>
             <button onclick="handleLogout()" class="w-full flex items-center p-3 rounded-lg text-red-400 mt-10 hover:bg-red-900/20"><i data-lucide="log-out" class="mr-3"></i> Salir</button>
         </nav>
     </aside>
 
     <main class="flex-1 overflow-y-auto p-8">
         <div id="dashboard" class="tab-content">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-slate-800">Seguimiento de Recomendaciones SPT</h2>
-                <div id="admin-badge" class="hidden px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-bold uppercase">Modo Administrador MNPT</div>
-            </div>
-            
+            <h2 class="text-2xl font-bold mb-6">Monitoreo de Recomendaciones </h2>
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <table class="w-full text-left">
                     <thead class="bg-gray-50 border-b">
                         <tr>
-                            <th class="p-4 text-xs font-bold text-gray-500 uppercase">Institución y Recomendación</th>
-                            <th class="p-4 text-xs font-bold text-gray-500 uppercase">Progreso Oficial</th>
-                            <th class="p-4 text-xs font-bold text-gray-500 uppercase">Acciones</th>
+                            <th class="p-4 text-xs font-bold text-gray-500 uppercase">Institución</th>
+                            <th class="p-4 text-xs font-bold text-gray-500 uppercase">Avance Oficial</th>
+                            <th class="p-4 text-xs font-bold text-gray-500 uppercase">Acción</th>
                         </tr>
                     </thead>
                     <tbody id="recommendations-list"></tbody>
@@ -51,26 +47,25 @@
         </div>
 
         <div id="laboratorio" class="tab-content hidden">
-            <h2 class="text-2xl font-bold mb-6 text-slate-800 text-center">Superación de Barreras Institucionales</h2>
-            <div class="bg-white p-8 rounded-xl border border-gray-200 max-w-2xl mx-auto shadow-sm">
-                <p class="text-sm text-gray-500 mb-4 italic">Utilice este módulo para generar evidencia y presión política ante la falta de voluntad o recursos.</p>
-                <textarea id="ai-input" class="w-full h-40 p-4 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="Describa el obstáculo..."></textarea>
-                <button onclick="callAI()" id="ai-btn" class="mt-4 bg-blue-600 text-white w-full py-3 rounded-xl hover:bg-blue-700 flex items-center justify-center font-bold transition">
-                    <i data-lucide="zap" class="mr-2"></i> Obtener Estrategia SIIS
+            <h2 class="text-2xl font-bold mb-6">Laboratorio de Incidencia Política [cite: 11]</h2>
+            <div class="bg-white p-6 rounded-xl border border-gray-200 max-w-2xl shadow-sm">
+                <textarea id="ai-input" class="w-full h-40 p-4 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Describa el obstáculo institucional (ej. falta de voluntad política)..."></textarea>
+                <button onclick="callAI()" id="ai-btn" class="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center font-bold">
+                    <i data-lucide="zap" class="mr-2"></i> Analizar Barreras
                 </button>
-                <div id="ai-result" class="mt-6 p-6 bg-slate-50 text-slate-700 rounded-xl hidden border-l-4 border-blue-500 whitespace-pre-wrap leading-relaxed shadow-inner"></div>
+                <div id="ai-result" class="mt-6 p-6 bg-blue-50 text-blue-900 rounded-lg hidden border-l-4 border-blue-500 whitespace-pre-wrap"></div>
             </div>
         </div>
 
         <div id="upload-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-[60]">
             <div class="bg-white p-6 rounded-xl max-w-md w-full shadow-2xl">
-                <h3 class="text-lg font-bold mb-4">Reportar Avance y Evidencia</h3>
+                <h3 class="text-lg font-bold mb-4">Adjuntar Evidencia de Avance</h3>
                 <input type="hidden" id="modal-rec-id">
-                <textarea id="modal-description" class="w-full p-3 border rounded mb-4" placeholder="Describa qué acción se realizó..."></textarea>
+                <textarea id="modal-description" class="w-full p-3 border rounded mb-4" placeholder="¿Qué se logró con esta evidencia?"></textarea>
                 <input type="file" id="modal-file" class="block w-full text-sm text-gray-500 mb-6 border p-2 rounded">
                 <div class="flex space-x-3">
-                    <button onclick="closeModal()" class="flex-1 py-2 border rounded-lg hover:bg-gray-50">Cancelar</button>
-                    <button onclick="submitEvidence()" class="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Enviar para Validación</button>
+                    <button onclick="closeModal()" class="flex-1 py-2 border rounded-lg hover:bg-gray-50">Cerrar</button>
+                    <button onclick="submitEvidence()" id="submit-ev-btn" class="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Subir</button>
                 </div>
             </div>
         </div>
@@ -89,8 +84,6 @@
         firebase.auth().onAuthStateChanged(user => {
             if (user) {
                 document.getElementById('login-screen').classList.add('hidden');
-                // Simulación lógica Admin (en producción usar Custom Claims)
-                if(user.email.includes('mnpt.go.cr')) document.getElementById('admin-badge').classList.remove('hidden');
                 loadData();
             } else {
                 document.getElementById('login-screen').classList.remove('hidden');
@@ -111,23 +104,15 @@
             const data = await res.json();
             const list = document.getElementById('recommendations-list');
             list.innerHTML = data.map(item => `
-                <tr class="border-b hover:bg-gray-50 transition">
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="p-4"><div class="font-bold">${item.institution}</div><div class="text-xs text-slate-500">${item.id}</div></td>
                     <td class="p-4">
-                        <div class="text-sm font-bold text-slate-800">${item.institution}</div>
-                        <div class="text-xs text-slate-500">${item.id}: ${item.description || ''}</div>
-                    </td>
-                    <td class="p-4">
-                        <div class="flex items-center space-x-3">
-                            <div class="flex-1 bg-gray-200 h-2 rounded-full overflow-hidden">
-                                <div class="bg-blue-600 h-full" style="width:${item.progress}%"></div>
-                            </div>
+                        <div class="flex items-center">
+                            <div class="w-24 bg-gray-200 h-1.5 rounded-full mr-3"><div class="bg-blue-600 h-1.5 rounded-full" style="width:${item.progress}%"></div></div>
                             <span class="text-xs font-bold">${item.progress}%</span>
                         </div>
-                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${item.status === 'Validado' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}">${item.status}</span>
                     </td>
-                    <td class="p-4">
-                        <button onclick="openModal('${item.id}')" class="text-blue-600 hover:text-blue-800 text-xs font-bold underline">Reportar Avance</button>
-                    </td>
+                    <td class="p-4"><button onclick="openModal('${item.id}')" class="text-blue-600 text-xs font-bold uppercase underline">Evidencia</button></td>
                 </tr>
             `).join('');
             lucide.createIcons();
@@ -141,10 +126,14 @@
         function closeModal() { document.getElementById('upload-modal').classList.add('hidden'); }
 
         async function submitEvidence() {
+            const btn = document.getElementById('submit-ev-btn');
             const recId = document.getElementById('modal-rec-id').value;
             const desc = document.getElementById('modal-description').value;
             const file = document.getElementById('modal-file').files[0];
             const token = await firebase.auth().currentUser.getIdToken();
+
+            if(!file) return alert("Seleccione un archivo");
+            btn.disabled = true; btn.innerText = "Subiendo...";
 
             const formData = new FormData();
             formData.append('recommendation_id', recId);
@@ -152,7 +141,7 @@
             formData.append('file', file);
 
             try {
-                const res = await fetch(`/api/evidence/upload?recommendation_id=${recId}&description=${desc}`, {
+                const res = await fetch('/api/evidence/upload', {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}` },
                     body: formData
@@ -161,7 +150,8 @@
                 alert(data.message);
                 closeModal();
                 loadData();
-            } catch (e) { alert("Error subiendo evidencia"); }
+            } catch (e) { alert("Error en el servidor"); }
+            finally { btn.disabled = false; btn.innerText = "Subir"; }
         }
 
         async function callAI() {
@@ -169,10 +159,8 @@
             const btn = document.getElementById('ai-btn');
             const resDiv = document.getElementById('ai-result');
             const token = await firebase.auth().currentUser.getIdToken();
-
-            btn.disabled = true;
-            resDiv.classList.remove('hidden');
-            resDiv.innerText = "Consultando marco del OPCAT...";
+            
+            btn.disabled = true; resDiv.classList.remove('hidden'); resDiv.innerText = "Generando estrategia estratégica...";
 
             const res = await fetch('/api/ai/analyze', {
                 method: 'POST',
