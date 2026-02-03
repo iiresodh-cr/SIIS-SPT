@@ -1,10 +1,11 @@
 import os
-from fastapi import FastAPI, Depends, HTTPException, status, Request
+from typing import List
+from fastapi import FastAPI, Depends, HTTPException, status, Request, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from google.cloud import firestore
+from google.cloud import firestore, storage
 import vertexai
 from vertexai.generative_models import GenerativeModel
 import firebase_admin
@@ -15,10 +16,10 @@ PROJECT_ID = os.getenv("GCP_PROJECT_ID", "siis-stp")
 LOCATION = os.getenv("GCP_LOCATION", "us-central1")
 MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "gemini-1.5-flash")
 APP_ID = os.getenv("APP_ID", "siis-spt-cr")
+BUCKET_NAME = os.getenv("STORAGE_BUCKET_NAME", f"{PROJECT_ID}.firebasestorage.app")
 
 app = FastAPI(title="SIIS-SPT System")
 
-# Configuración CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -26,95 +27,110 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- INICIALIZACIÓN DE SERVICIOS ---
 if not firebase_admin._apps:
     firebase_admin.initialize_app()
 
 db = firestore.Client(project=PROJECT_ID)
+storage_client = storage.Client(project=PROJECT_ID)
 vertexai.init(project=PROJECT_ID, location=LOCATION)
 
 # --- MODELOS DE DATOS ---
 class BarrierInput(BaseModel):
     text: str
 
-# --- SEGURIDAD (CORREGIDA PARA EVITAR VALUEERROR) ---
+class ApprovalInput(BaseModel):
+    recommendation_id: str
+    approved_progress: int
+    admin_notes: str
+
+# --- SEGURIDAD ---
 async def validate_user_session(request: Request):
-    """
-    Valida el token de Firebase extrayéndolo directamente del request
-    para evitar errores de inspección de firmas en FastAPI.
-    """
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
-        # Nota: Durante pruebas iniciales puedes comentar el raise si no tienes el JWT listo
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Se requiere autenticación de Firebase"
-        )
-    
+        raise HTTPException(status_code=401, detail="No autorizado")
     token = auth_header.split("Bearer ")[1]
     try:
         return auth.verify_id_token(token)
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Sesión inválida: {str(e)}"
-        )
+    except:
+        raise HTTPException(status_code=401, detail="Sesión inválida")
 
 # --- ENDPOINTS DE API ---
 
 @app.get("/api/recommendations")
 async def get_recommendations(user_data=Depends(validate_user_session)):
-    """
-    Consulta Firestore para obtener el cumplimiento de las recomendaciones.
-    Ruta: /artifacts/{APP_ID}/public/data/recommendations
-    """
     try:
-        collection_path = f"artifacts/{APP_ID}/public/data/recommendations"
-        docs = db.collection(collection_path).stream()
+        docs = db.collection("artifacts").document(APP_ID).collection("public").document("data").collection("recommendations").stream()
         return [doc.to_dict() for doc in docs]
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/ai/analyze")
 async def analyze_with_gemini(data: BarrierInput, user_data=Depends(validate_user_session)):
-    """
-    Laboratorio de IA: Analiza obstáculos institucionales del MNPT.
-    """
     try:
         model = GenerativeModel(MODEL_NAME)
-        prompt = (
-            f"Contexto: Sistema SIIS-SPT (Costa Rica). "
-            f"Analiza el siguiente obstáculo institucional para el MNPT: {data.text}. "
-            f"Genera 3 estrategias de incidencia política y técnica."
-        )
+        prompt = f"Como experto en OPCAT para el MNPT Costa Rica, analiza este obstáculo: {data.text}. Propón 3 estrategias de incidencia."
         response = model.generate_content(prompt)
         return {"analysis": response.text}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error en Gemini: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/health")
-async def health():
-    return {"status": "online", "service": "SIIS-SPT"}
+@app.post("/api/evidence/upload")
+async def upload_evidence(
+    recommendation_id: str, 
+    description: str,
+    file: UploadFile = File(...), 
+    user_data=Depends(validate_user_session)
+):
+    """Sube evidencia y solicita pre-evaluación de la IA."""
+    try:
+        # 1. Subir a Cloud Storage
+        bucket = storage_client.bucket(BUCKET_NAME)
+        blob = bucket.blob(f"evidence/{recommendation_id}/{file.filename}")
+        blob.upload_from_file(file.file, content_type=file.content_type)
+        file_url = blob.public_url
 
-# --- SERVIDOR DE ARCHIVOS ESTÁTICOS (INTERFAZ WEB) ---
+        # 2. Pre-evaluación preliminar (IA)
+        model = GenerativeModel(MODEL_NAME)
+        prompt = f"Analiza esta descripción de evidencia para la recomendación {recommendation_id}: '{description}'. Basado en el informe del SPT, ¿qué porcentaje estimado de cumplimiento representa? Responde solo el número."
+        ai_suggestion = model.generate_content(prompt).text.strip()
 
-# 1. Montamos la carpeta 'static' para que JS/CSS sean accesibles
-# Si no tienes carpeta static aún, crea una y mete el index.html ahí.
+        # 3. Guardar registro en Firestore para revisión administrativa
+        sub_ref = db.collection("artifacts").document(APP_ID).collection("submissions").document()
+        sub_ref.set({
+            "recommendation_id": recommendation_id,
+            "submitted_by": user_data['email'],
+            "file_url": file_url,
+            "description": description,
+            "ai_suggestion": ai_suggestion,
+            "status": "PENDING_REVIEW"
+        })
+        return {"message": "Evidencia subida. Pendiente de validación por el MNPT."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/admin/approve")
+async def approve_recommendation(data: ApprovalInput, user_data=Depends(validate_user_session)):
+    """Visto bueno administrativo del MNPT para oficializar el avance."""
+    try:
+        rec_ref = db.collection("artifacts").document(APP_ID).collection("public").document("data").collection("recommendations").document(data.recommendation_id)
+        rec_ref.update({
+            "progress": data.approved_progress,
+            "status": "Validado" if data.approved_progress == 100 else "En Proceso",
+            "last_review_by": user_data['email'],
+            "admin_notes": data.admin_notes
+        })
+        return {"message": "Progreso validado oficialmente."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# --- SERVIDOR ESTÁTICO ---
 if os.path.exists("static"):
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/")
 async def serve_index():
-    """
-    Sirve el archivo index.html en la raíz de la URL.
-    """
-    index_path = os.path.join("static", "index.html")
-    if os.path.exists(index_path):
-        return FileResponse(index_path)
-    return {"error": "Archivo index.html no encontrado en la carpeta /static"}
+    return FileResponse(os.path.join("static", "index.html"))
 
-# --- INICIO ---
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.environ.get("PORT", 8080))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
