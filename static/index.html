@@ -1,1 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIIS-SPT | MNPT Costa Rica</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-gray-50 flex h-screen overflow-hidden text-gray-800">
 
+    <aside class="w-64 bg-slate-900 text-white flex flex-col">
+        <div class="p-6 border-b border-slate-800">
+            <h1 class="text-xl font-bold text-blue-400">SIIS-SPT</h1>
+            <p class="text-xs text-slate-400">Incidencia y Seguimiento</p>
+        </div>
+        <nav class="flex-1 p-4 space-y-2">
+            <button onclick="showTab('dashboard')" class="w-full flex items-center p-3 rounded-lg hover:bg-slate-800 transition">
+                <i data-lucide="layout-dashboard" class="mr-3 w-5"></i> Dashboard
+            </button>
+            <button onclick="showTab('laboratorio')" class="w-full flex items-center p-3 rounded-lg hover:bg-slate-800 transition">
+                <i data-lucide="brain" class="mr-3 w-5"></i> Laboratorio IA
+            </button>
+        </nav>
+        <div class="p-4 text-[10px] text-slate-500 uppercase tracking-widest text-center">
+            IIRESODH & MNPT [cite: 5, 7]
+        </div>
+    </aside>
+
+    <main class="flex-1 overflow-y-auto p-8">
+        <div id="dashboard" class="tab-content">
+            <h2 class="text-2xl font-bold mb-6">Monitoreo de Recomendaciones</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <p class="text-sm text-gray-500 uppercase">Cumplimiento Global</p>
+                    <p class="text-3xl font-bold text-blue-600">34%</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <p class="text-sm text-gray-500 uppercase">Alertas Críticas</p>
+                    <p class="text-3xl font-bold text-red-500">12</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <p class="text-sm text-gray-500 uppercase">Instituciones Activas</p>
+                    <p class="text-3xl font-bold text-green-600">08</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <table class="w-full text-left">
+                    <thead class="bg-gray-50 border-b">
+                        <tr>
+                            <th class="p-4 font-semibold">ID SPT</th>
+                            <th class="p-4 font-semibold">Institución Responsable</th>
+                            <th class="p-4 font-semibold">Avance</th>
+                            <th class="p-4 font-semibold">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body">
+                        <tr class="border-b hover:bg-gray-50">
+                            <td class="p-4 text-sm">CAT/OP/CRI/R.1</td>
+                            <td class="p-4 text-sm font-medium">Ministerio de Justicia y Paz</td>
+                            <td class="p-4 w-48">
+                                <div class="w-full bg-gray-200 rounded-full h-1.5">
+                                    <div class="bg-blue-600 h-1.5 rounded-full" style="width: 45%"></div>
+                                </div>
+                            </td>
+                            <td class="p-4"><span class="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full font-bold">EN PROCESO</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="laboratorio" class="tab-content hidden">
+            <h2 class="text-2xl font-bold mb-6">Laboratorio de Incidencia IA</h2>
+            <div class="max-w-2xl bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <label class="block mb-2 font-medium">Describa la barrera institucional:</label>
+                <textarea id="ai-input" class="w-full h-32 p-4 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Ej: Falta de recursos presupuestarios para capacitación..."></textarea>
+                <button onclick="analyzeBarrier()" class="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition flex items-center">
+                    <i data-lucide="zap" class="mr-2 w-4"></i> Generar Estrategia
+                </button>
+                <div id="ai-response" class="mt-6 p-4 bg-slate-50 rounded-lg text-slate-700 hidden border-l-4 border-blue-500">
+                    </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Inicializar iconos
+        lucide.createIcons();
+
+        // Navegación simple
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
+        }
+
+        // Llamada a la IA (Gemini 1.5 Flash) [cite: 11, 34]
+        async function analyzeBarrier() {
+            const text = document.getElementById('ai-input').value;
+            const responseDiv = document.getElementById('ai-response');
+            
+            responseDiv.innerHTML = "Analizando obstáculos con IA...";
+            responseDiv.classList.remove('hidden');
+
+            try {
+                // Simulación de llamada al backend
+                const response = await fetch('/ai/analyze', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ text })
+                });
+                const data = await response.json();
+                responseDiv.innerHTML = `<strong>Análisis Estratégico:</strong><br>${data.analysis}`;
+            } catch (e) {
+                responseDiv.innerHTML = "Error al conectar con el SIIS-SPT Backend.";
+            }
+        }
+    </script>
+</body>
+</html>
