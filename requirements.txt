@@ -7,3 +7,4 @@ firebase-admin
 pydantic
 python-multipart
 reportlab
+gunicorn
