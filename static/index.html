@@ -179,7 +179,6 @@
     </div>
 
     <script>
-        // CONFIGURACIÓN E INICIALIZACIÓN
         const firebaseConfig = {
             apiKey: "AIzaSyD0n5oY7LGk7qaqMX_PjBvHfWnaxRa1nqg",
             authDomain: "siis-stp.firebaseapp.com",
@@ -189,7 +188,6 @@
         firebase.initializeApp(firebaseConfig);
         lucide.createIcons();
 
-        // CONTROL DE SESIÓN
         firebase.auth().onAuthStateChanged(async (user) => {
             if (user) {
                 document.getElementById('login-screen').classList.add('hidden');
@@ -201,22 +199,17 @@
             }
         });
 
-        // SINCRONIZACIÓN DE DATOS Y ROLES
         async function syncSystemData(user) {
             const token = await user.getIdToken();
             try {
-                // Obtenemos recomendaciones y validamos rol en Firestore
-                const res = await fetch('/api/recommendations', { 
-                    headers: { 'Authorization': `Bearer ${token}` } 
+                // Obtenemos perfil desde el servidor para determinar si es ADMIN dinámicamente
+                const authMeRes = await fetch('/api/auth/me', {
+                    headers: { 'Authorization': `Bearer ${token}` }
                 });
-                const recommendations = await res.json();
-                
-                // Determinamos permisos administrativos de IIRESODH
-                const isUserAdmin = user.email === "durquilla@iiresodh.org" || 
-                   user.email === "prueba@iiresodh.org" || 
-                   user.email.endsWith("@mnpt.go.cr");
-                
-                if (isUserAdmin) {
+                const userProfile = await authMeRes.json();
+
+                // Lógica de visibilidad del PANEL MNPT dinámica según Firestore
+                if (userProfile.is_admin) {
                     document.getElementById('admin-tab').classList.remove('hidden');
                     document.getElementById('inst-tag').innerText = "Perfil: Administrador Técnico";
                     document.getElementById('inst-tag').classList.add('text-purple-600', 'border-purple-200');
@@ -225,13 +218,16 @@
                     document.getElementById('inst-tag').innerText = "Perfil: Punto Focal Institucional";
                 }
 
+                const res = await fetch('/api/recommendations', { 
+                    headers: { 'Authorization': `Bearer ${token}` } 
+                });
+                const recommendations = await res.json();
                 renderDashboard(recommendations);
             } catch (err) {
                 console.error("Falla en sincronización:", err);
             }
         }
 
-        // RENDERIZADO DEL DASHBOARD
         function renderDashboard(data) {
             const list = document.getElementById('recommendations-list');
             list.innerHTML = data.map(item => `
@@ -258,7 +254,6 @@
             lucide.createIcons();
         }
 
-        // LABORATORIO DE IA (GEMINI-2.5-FLASH)
         async function analyzeInstitutionalBarrier() {
             const text = document.getElementById('ai-input').value;
             const btn = document.getElementById('ai-btn');
@@ -288,7 +283,6 @@
             }
         }
 
-        // PANEL DE ADMINISTRADOR
         async function loadPendingAdminQueue() {
             const token = await firebase.auth().currentUser.getIdToken();
             const res = await fetch('/api/admin/pending', { headers: { 'Authorization': `Bearer ${token}` } });
@@ -316,7 +310,6 @@
             }
         }
 
-        // CARGA DE EVIDENCIA
         async function processEvidenceUpload() {
             const btn = document.getElementById('btn-submit-ev');
             const file = document.getElementById('modal-file').files[0];
@@ -347,7 +340,6 @@
             }
         }
 
-        // FUNCIONES DE UI
         function openModal(id) { document.getElementById('modal-rec-id').value = id; document.getElementById('upload-modal').classList.remove('hidden'); }
         function closeModal() { document.getElementById('upload-modal').classList.add('hidden'); }
         function switchTab(tabId, el) {
