@@ -1,6 +1,8 @@
 import os
 from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from google.cloud import firestore
 import vertexai
@@ -14,8 +16,9 @@ LOCATION = os.getenv("GCP_LOCATION", "us-central1")
 MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "gemini-1.5-flash")
 APP_ID = os.getenv("APP_ID", "siis-spt-cr")
 
-app = FastAPI()
+app = FastAPI(title="SIIS-SPT System")
 
+# Configuración CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -23,73 +26,95 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- INICIALIZACIÓN ---
+# --- INICIALIZACIÓN DE SERVICIOS ---
 if not firebase_admin._apps:
     firebase_admin.initialize_app()
 
 db = firestore.Client(project=PROJECT_ID)
 vertexai.init(project=PROJECT_ID, location=LOCATION)
 
-# --- MODELOS ---
+# --- MODELOS DE DATOS ---
 class BarrierInput(BaseModel):
     text: str
 
-# --- SEGURIDAD (MÉTODO ALTERNATIVO PARA EVITAR VALUEERROR) ---
+# --- SEGURIDAD (CORREGIDA PARA EVITAR VALUEERROR) ---
 async def validate_user_session(request: Request):
     """
-    Se usa 'Request' directamente en lugar de 'Security(None)'. 
-    Esto evita que FastAPI intente inspeccionar la firma de la clase 'str'.
+    Valida el token de Firebase extrayéndolo directamente del request
+    para evitar errores de inspección de firmas en FastAPI.
     """
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
+        # Nota: Durante pruebas iniciales puedes comentar el raise si no tienes el JWT listo
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Falta token de autorización"
+            detail="Se requiere autenticación de Firebase"
         )
     
     token = auth_header.split("Bearer ")[1]
     try:
-        # Retorna los datos decodificados del usuario de Firebase
         return auth.verify_id_token(token)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Sesión expirada o inválida: {str(e)}"
+            detail=f"Sesión inválida: {str(e)}"
         )
 
-# --- ENDPOINTS ---
+# --- ENDPOINTS DE API ---
 
-@app.get("/recommendations")
+@app.get("/api/recommendations")
 async def get_recommendations(user_data=Depends(validate_user_session)):
     """
-    Lista las recomendaciones cargadas para el MNPT.
+    Consulta Firestore para obtener el cumplimiento de las recomendaciones.
+    Ruta: /artifacts/{APP_ID}/public/data/recommendations
     """
     try:
-        # Estructura: /artifacts/siis-spt-cr/public/data/recommendations
         collection_path = f"artifacts/{APP_ID}/public/data/recommendations"
         docs = db.collection(collection_path).stream()
-        
         return [doc.to_dict() for doc in docs]
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error en base de datos: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/ai/analyze")
+@app.post("/api/ai/analyze")
 async def analyze_with_gemini(data: BarrierInput, user_data=Depends(validate_user_session)):
     """
-    Analiza barreras como la falta de voluntad política o recursos usando IA[cite: 10, 11].
+    Laboratorio de IA: Analiza obstáculos institucionales del MNPT.
     """
     try:
         model = GenerativeModel(MODEL_NAME)
         prompt = (
-            f"Actúa como un experto en el OPCAT para el SIIS-SPT[cite: 3]. "
-            f"Analiza este obstáculo institucional: {data.text}[cite: 15, 18]. "
-            f"Genera una estrategia de incidencia política para el MNPT de Costa Rica[cite: 32]."
+            f"Contexto: Sistema SIIS-SPT (Costa Rica). "
+            f"Analiza el siguiente obstáculo institucional para el MNPT: {data.text}. "
+            f"Genera 3 estrategias de incidencia política y técnica."
         )
         response = model.generate_content(prompt)
         return {"analysis": response.text}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error en Gemini: {str(e)}")
 
-@app.get("/health")
+@app.get("/api/health")
 async def health():
-    return {"status": "ok", "app": "SIIS-SPT"}
+    return {"status": "online", "service": "SIIS-SPT"}
+
+# --- SERVIDOR DE ARCHIVOS ESTÁTICOS (INTERFAZ WEB) ---
+
+# 1. Montamos la carpeta 'static' para que JS/CSS sean accesibles
+# Si no tienes carpeta static aún, crea una y mete el index.html ahí.
+if os.path.exists("static"):
+    app.mount("/static", StaticFiles(directory="static"), name="static")
+
+@app.get("/")
+async def serve_index():
+    """
+    Sirve el archivo index.html en la raíz de la URL.
+    """
+    index_path = os.path.join("static", "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    return {"error": "Archivo index.html no encontrado en la carpeta /static"}
+
+# --- INICIO ---
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", 8080))
+    uvicorn.run(app, host="0.0.0.0", port=port)
