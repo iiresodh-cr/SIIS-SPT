@@ -9,12 +9,12 @@ import binascii
 import urllib.parse
 from typing import Optional, List, Dict, Any
 
-# --- IMPORTACIONES DE GOOGLE AUTH ---
+# --- IMPORTACIONES DE GOOGLE AUTH (MANTENIDAS) ---
 import google.auth
 import google.auth.transport.requests
 from google.auth import iam
 
-from fastapi import FastAPI, Depends, HTTPException, Request, UploadFile, File, Form, status, Query # <--- AGREGADO: Query
+from fastapi import FastAPI, Depends, HTTPException, Request, UploadFile, File, Form, status, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, StreamingResponse
@@ -68,7 +68,7 @@ class SuggestionInput(BaseModel):
     submission_id: str
     recommendation_id: str
 
-# --- MIDDLEWARE DE SEGURIDAD ---
+# --- MIDDLEWARE DE SEGURIDAD (ORIGINAL) ---
 async def get_current_user(request: Request) -> Dict[str, Any]:
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
@@ -92,38 +92,31 @@ async def get_current_user(request: Request) -> Dict[str, Any]:
         logger.error(f"Error de Auth: {str(e)}")
         raise HTTPException(status_code=401, detail="Token inválido")
 
-# --- FUNCIÓN DE FIRMA MANUAL V4 ADAPTADA (SIN JSON FILE) ---
+# --- FUNCIÓN DE FIRMA MANUAL V4 (MANTENIDA POR SOLICITUD, AUNQUE USEMOS PROXY) ---
 def generate_v4_signed_url_manual(bucket_name, blob_name):
     """
-    Implementación manual del algoritmo V4 de Google, usando IAM Signer
-    para firmar remotamente sin necesidad de clave privada local.
+    Implementación manual del algoritmo V4 de Google.
+    Se mantiene en el código para no reducir líneas, pero el sistema usará el Proxy.
     """
     try:
-        # 1. Obtener credenciales y refrescar para tener el email
         creds, project = google.auth.default()
         auth_req = google.auth.transport.requests.Request()
         creds.refresh(auth_req)
         service_account_email = creds.service_account_email
 
-        # 2. Configuración de tiempo
         now = datetime.datetime.now(datetime.timezone.utc)
         request_timestamp = now.strftime("%Y%m%dT%H%M%SZ")
         datestamp = now.strftime("%Y%m%d")
-        expiration = 3600 # 1 hora
+        expiration = 3600
 
-        # 3. Construcción de Recursos Canónicos
-        # Usamos estilo path: storage.googleapis.com/bucket/objeto
         host = "storage.googleapis.com"
         canonical_uri = f"/{bucket_name}/{urllib.parse.quote(blob_name, safe='')}"
-        
         credential_scope = f"{datestamp}/auto/storage/goog4_request"
         credential = f"{service_account_email}/{credential_scope}"
         
-        # Headers firmados
         canonical_headers = f"host:{host}\n"
         signed_headers = "host"
 
-        # Query Params Canónicos
         query_params = {
             "X-Goog-Algorithm": "GOOG4-RSA-SHA256",
             "X-Goog-Credential": credential,
@@ -132,12 +125,10 @@ def generate_v4_signed_url_manual(bucket_name, blob_name):
             "X-Goog-SignedHeaders": signed_headers,
         }
         
-        # Ordenar parámetros para la firma
         canonical_query_string = "&".join(
             [f"{k}={urllib.parse.quote(v, safe='')}" for k, v in sorted(query_params.items())]
         )
 
-        # 4. Solicitud Canónica (Canonical Request)
         canonical_request = "\n".join([
             "GET",
             canonical_uri,
@@ -147,7 +138,6 @@ def generate_v4_signed_url_manual(bucket_name, blob_name):
             "UNSIGNED-PAYLOAD"
         ])
 
-        # 5. String to Sign
         algorithm = "GOOG4-RSA-SHA256"
         canonical_request_hash = hashlib.sha256(canonical_request.encode("utf-8")).hexdigest()
         
@@ -158,17 +148,12 @@ def generate_v4_signed_url_manual(bucket_name, blob_name):
             canonical_request_hash
         ])
 
-        # 6. FIRMA REMOTA (Aquí está la magia para Cloud Run)
-        # Usamos IAM API en lugar de archivo local
         signer = iam.Signer(auth_req, creds, service_account_email)
         signature_bytes = signer.sign(string_to_sign.encode("utf-8"))
         signature_hex = binascii.hexlify(signature_bytes).decode("utf-8")
 
-        # 7. Construcción URL Final
         final_url = f"https://{host}{canonical_uri}?{canonical_query_string}&X-Goog-Signature={signature_hex}"
-        
         return final_url
-
     except Exception as e:
         logger.error(f"Error generando firma manual V4: {str(e)}")
         return None
@@ -257,13 +242,20 @@ async def upload_evidence(
         logger.error(f"Fallo carga: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-# --- PROXY DE DESCARGA (AGREGADO: ESTO SOLUCIONA EL 403) ---
+# --- ENDPOINT PROXY (SOLUCIÓN TÉCNICA PARA EL ERROR 403) ---
 @app.get("/api/evidence/proxy")
 async def download_proxy(path: str, token: str = Query(...)):
+    """
+    Este endpoint es crítico. Evita usar URLs de Google firmadas.
+    Descarga el archivo usando los permisos de la cuenta de servicio del servidor
+    y se lo entrega al usuario directamente.
+    """
     try:
+        # 1. Validar token manualmente (porque viene en URL, no en header)
         decoded_token = auth.verify_id_token(token)
         email = decoded_token.get("email")
         
+        # 2. Verificar permisos de admin
         user_ref = db.collection("artifacts").document(APP_ID).collection("users").document(email)
         user_doc = user_ref.get()
         if not user_doc.exists:
@@ -271,13 +263,16 @@ async def download_proxy(path: str, token: str = Query(...)):
         
         user_data = user_doc.to_dict()
         if not (user_data.get("role") == "admin" or user_data.get("inst_slug") == "all"):
-             raise HTTPException(status_code=403, detail="Requiere Admin")
+             raise HTTPException(status_code=403, detail="Requiere permisos de administrador")
 
+        # 3. Descarga interna (Server-to-Server)
         bucket = storage_client.bucket(BUCKET_NAME)
         blob = bucket.blob(path)
+        
         if not blob.exists():
              raise HTTPException(status_code=404, detail="Archivo no encontrado")
 
+        # 4. Entregar archivo al navegador
         file_stream = io.BytesIO(blob.download_as_bytes())
         content_type = blob.content_type or "application/octet-stream"
         filename = path.split("/")[-1]
@@ -289,18 +284,22 @@ async def download_proxy(path: str, token: str = Query(...)):
         )
     except Exception as e:
         logger.error(f"Error Proxy: {str(e)}")
-        raise HTTPException(status_code=401, detail="Acceso denegado")
+        raise HTTPException(status_code=401, detail="Acceso denegado o token inválido")
 
 @app.get("/api/admin/pending")
-async def list_pending(request: Request, user=Depends(get_current_user)): # <--- AGREGADO: request
-    """Lista pendientes y genera URL al Proxy."""
+async def list_pending(request: Request, user=Depends(get_current_user)):
+    """
+    Lista los pendientes.
+    MODIFICADO: Ahora genera URLs que apuntan al Proxy (/api/evidence/proxy)
+    en lugar de intentar generar URLs de Google que dan error 403.
+    """
     if not user["is_admin"]:
         raise HTTPException(status_code=403)
     try:
         subs_stream = db.collection("artifacts").document(APP_ID).collection("submissions").where("status", "==", "PENDIENTE").stream()
         results = []
         
-        # URL base (ej: https://mi-app.run.app)
+        # Obtenemos la URL base del propio servidor (ej: https://mi-api.run.app)
         base_url = str(request.base_url).rstrip("/")
         
         for s in subs_stream:
@@ -308,7 +307,8 @@ async def list_pending(request: Request, user=Depends(get_current_user)): # <---
             file_path = data.get("file_path")
             
             if file_path:
-                # MODIFICADO: Apunta al Proxy en lugar de generar URL firmada
+                # AQUÍ ESTÁ EL CAMBIO CRÍTICO PARA EVITAR EL 403:
+                # Construimos la URL hacia nuestro PROXY, no hacia Google.
                 encoded_path = urllib.parse.quote(file_path)
                 data["file_url"] = f"{base_url}/api/evidence/proxy?path={encoded_path}"
             
