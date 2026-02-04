@@ -187,12 +187,14 @@ async def list_pending(user=Depends(get_current_user)):
             if file_path:
                 blob = bucket.blob(file_path)
                 # Generación V4 con dominio oficial para evitar Forbidden
-                data["file_url"] = blob.generate_signed_url(
+                signed_url = blob.generate_signed_url(
                     version="v4", 
                     expiration=datetime.timedelta(minutes=60), 
                     method="GET",
                     service_account_email=creds.service_account_email
                 )
+                # FIX: Reemplazar el dominio de consola (que pide login) por el dominio de API (que acepta la firma)
+                data["file_url"] = signed_url.replace("storage.cloud.google.com", "storage.googleapis.com")
             
             # Recuperamos campo 'id' interno para protagonismo visual
             rec_doc = db.collection("artifacts").document(APP_ID).collection("public").document("data").collection("recommendations").document(data['recommendation_id']).get()
