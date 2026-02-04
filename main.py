@@ -4,10 +4,16 @@ import logging
 import datetime
 import json
 import re
+import hashlib
+import binascii
+import urllib.parse
+from typing import Optional, List, Dict, Any
+
+# --- IMPORTACIONES DE GOOGLE AUTH ---
 import google.auth
 import google.auth.transport.requests
-from google.auth import iam  # <--- IMPORTANTE: Necesario para firmar remotamente
-from typing import Optional, List, Dict, Any
+from google.auth import iam
+
 from fastapi import FastAPI, Depends, HTTPException, Request, UploadFile, File, Form, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -85,6 +91,87 @@ async def get_current_user(request: Request) -> Dict[str, Any]:
     except Exception as e:
         logger.error(f"Error de Auth: {str(e)}")
         raise HTTPException(status_code=401, detail="Token inválido")
+
+# --- FUNCIÓN DE FIRMA MANUAL V4 ADAPTADA (SIN JSON FILE) ---
+def generate_v4_signed_url_manual(bucket_name, blob_name):
+    """
+    Implementación manual del algoritmo V4 de Google, usando IAM Signer
+    para firmar remotamente sin necesidad de clave privada local.
+    """
+    try:
+        # 1. Obtener credenciales y refrescar para tener el email
+        creds, project = google.auth.default()
+        auth_req = google.auth.transport.requests.Request()
+        creds.refresh(auth_req)
+        service_account_email = creds.service_account_email
+
+        # 2. Configuración de tiempo
+        now = datetime.datetime.now(datetime.timezone.utc)
+        request_timestamp = now.strftime("%Y%m%dT%H%M%SZ")
+        datestamp = now.strftime("%Y%m%d")
+        expiration = 3600 # 1 hora
+
+        # 3. Construcción de Recursos Canónicos
+        # Usamos estilo path: storage.googleapis.com/bucket/objeto
+        host = "storage.googleapis.com"
+        canonical_uri = f"/{bucket_name}/{urllib.parse.quote(blob_name, safe='')}"
+        
+        credential_scope = f"{datestamp}/auto/storage/goog4_request"
+        credential = f"{service_account_email}/{credential_scope}"
+        
+        # Headers firmados
+        canonical_headers = f"host:{host}\n"
+        signed_headers = "host"
+
+        # Query Params Canónicos
+        query_params = {
+            "X-Goog-Algorithm": "GOOG4-RSA-SHA256",
+            "X-Goog-Credential": credential,
+            "X-Goog-Date": request_timestamp,
+            "X-Goog-Expires": str(expiration),
+            "X-Goog-SignedHeaders": signed_headers,
+        }
+        
+        # Ordenar parámetros para la firma
+        canonical_query_string = "&".join(
+            [f"{k}={urllib.parse.quote(v, safe='')}" for k, v in sorted(query_params.items())]
+        )
+
+        # 4. Solicitud Canónica (Canonical Request)
+        canonical_request = "\n".join([
+            "GET",
+            canonical_uri,
+            canonical_query_string,
+            canonical_headers,
+            signed_headers,
+            "UNSIGNED-PAYLOAD"
+        ])
+
+        # 5. String to Sign
+        algorithm = "GOOG4-RSA-SHA256"
+        canonical_request_hash = hashlib.sha256(canonical_request.encode("utf-8")).hexdigest()
+        
+        string_to_sign = "\n".join([
+            algorithm,
+            request_timestamp,
+            credential_scope,
+            canonical_request_hash
+        ])
+
+        # 6. FIRMA REMOTA (Aquí está la magia para Cloud Run)
+        # Usamos IAM API en lugar de archivo local
+        signer = iam.Signer(auth_req, creds, service_account_email)
+        signature_bytes = signer.sign(string_to_sign.encode("utf-8"))
+        signature_hex = binascii.hexlify(signature_bytes).decode("utf-8")
+
+        # 7. Construcción URL Final
+        final_url = f"https://{host}{canonical_uri}?{canonical_query_string}&X-Goog-Signature={signature_hex}"
+        
+        return final_url
+
+    except Exception as e:
+        logger.error(f"Error generando firma manual V4: {str(e)}")
+        return None
 
 # --- API ENDPOINTS ---
 
@@ -172,23 +259,11 @@ async def upload_evidence(
 
 @app.get("/api/admin/pending")
 async def list_pending(user=Depends(get_current_user)):
-    """Solución Final 403: Usa IAM Signer explícito y fuerza dominio API."""
+    """Genera URLs firmadas usando el algoritmo V4 manual."""
     if not user["is_admin"]:
         raise HTTPException(status_code=403)
     try:
-        # 1. Configurar credenciales y Signer (firmante remoto)
-        creds, _ = google.auth.default()
-        auth_req = google.auth.transport.requests.Request()
-        creds.refresh(auth_req) # Obtener email real
-        
-        # Este 'signer' usa la API 'projects.serviceAccounts.signBlob' 
-        # en lugar de intentar firmar localmente (que falla sin clave privada)
-        signer = iam.Signer(auth_req, creds, creds.service_account_email)
-        
-        logger.info(f"Generando URL firmada con cuenta: {creds.service_account_email}")
-
         subs_stream = db.collection("artifacts").document(APP_ID).collection("submissions").where("status", "==", "PENDIENTE").stream()
-        bucket = storage_client.bucket(BUCKET_NAME)
         results = []
         
         for s in subs_stream:
@@ -196,29 +271,10 @@ async def list_pending(user=Depends(get_current_user)):
             file_path = data.get("file_path")
             
             if file_path:
-                blob = bucket.blob(file_path)
-                
-                try:
-                    # 2. Generar URL pasando el 'signer' explícitamente
-                    signed_url = blob.generate_signed_url(
-                        version="v4", 
-                        expiration=datetime.timedelta(minutes=60), 
-                        method="GET",
-                        service_account_email=creds.service_account_email,
-                        signer=signer # <--- CLAVE DEL ÉXITO EN CLOUD RUN
-                    )
-                    
-                    # 3. Asegurar dominio correcto (API) vs incorrecto (Consola con login)
-                    if "storage.cloud.google.com" in signed_url:
-                        data["file_url"] = signed_url.replace("storage.cloud.google.com", "storage.googleapis.com")
-                    else:
-                        data["file_url"] = signed_url
-                        
-                except Exception as url_error:
-                    logger.error(f"Fallo generando URL para {file_path}: {url_error}")
-                    data["file_url"] = None
-
-            # Recuperación de datos adicionales
+                # LLAMADA A LA FUNCIÓN MANUAL
+                signed_url = generate_v4_signed_url_manual(BUCKET_NAME, file_path)
+                data["file_url"] = signed_url
+            
             rec_doc = db.collection("artifacts").document(APP_ID).collection("public").document("data").collection("recommendations").document(data['recommendation_id']).get()
             if rec_doc.exists:
                 rec_info = rec_doc.to_dict()
@@ -232,8 +288,7 @@ async def list_pending(user=Depends(get_current_user)):
         return results
     except Exception as e:
         logger.error(f"Error pendientes: {str(e)}")
-        # Importante: devolver error 500 con detalles en logs de Cloud Run
-        raise HTTPException(status_code=500, detail="Error interno del servidor")
+        raise HTTPException(status_code=500, detail="Error de servidor")
 
 @app.post("/api/admin/approve")
 async def approve_submission(action: SubmissionAction, user=Depends(get_current_user)):
