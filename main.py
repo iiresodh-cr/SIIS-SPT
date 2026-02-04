@@ -14,7 +14,7 @@ import google.auth
 import google.auth.transport.requests
 from google.auth import iam
 
-from fastapi import FastAPI, Depends, HTTPException, Request, UploadFile, File, Form, status
+from fastapi import FastAPI, Depends, HTTPException, Request, UploadFile, File, Form, status, Query # <--- AGREGADO: Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, StreamingResponse
@@ -257,23 +257,60 @@ async def upload_evidence(
         logger.error(f"Fallo carga: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# --- PROXY DE DESCARGA (AGREGADO: ESTO SOLUCIONA EL 403) ---
+@app.get("/api/evidence/proxy")
+async def download_proxy(path: str, token: str = Query(...)):
+    try:
+        decoded_token = auth.verify_id_token(token)
+        email = decoded_token.get("email")
+        
+        user_ref = db.collection("artifacts").document(APP_ID).collection("users").document(email)
+        user_doc = user_ref.get()
+        if not user_doc.exists:
+             raise HTTPException(status_code=403, detail="No autorizado")
+        
+        user_data = user_doc.to_dict()
+        if not (user_data.get("role") == "admin" or user_data.get("inst_slug") == "all"):
+             raise HTTPException(status_code=403, detail="Requiere Admin")
+
+        bucket = storage_client.bucket(BUCKET_NAME)
+        blob = bucket.blob(path)
+        if not blob.exists():
+             raise HTTPException(status_code=404, detail="Archivo no encontrado")
+
+        file_stream = io.BytesIO(blob.download_as_bytes())
+        content_type = blob.content_type or "application/octet-stream"
+        filename = path.split("/")[-1]
+
+        return StreamingResponse(
+            file_stream, 
+            media_type=content_type,
+            headers={"Content-Disposition": f"inline; filename={filename}"}
+        )
+    except Exception as e:
+        logger.error(f"Error Proxy: {str(e)}")
+        raise HTTPException(status_code=401, detail="Acceso denegado")
+
 @app.get("/api/admin/pending")
-async def list_pending(user=Depends(get_current_user)):
-    """Genera URLs firmadas usando el algoritmo V4 manual."""
+async def list_pending(request: Request, user=Depends(get_current_user)): # <--- AGREGADO: request
+    """Lista pendientes y genera URL al Proxy."""
     if not user["is_admin"]:
         raise HTTPException(status_code=403)
     try:
         subs_stream = db.collection("artifacts").document(APP_ID).collection("submissions").where("status", "==", "PENDIENTE").stream()
         results = []
         
+        # URL base (ej: https://mi-app.run.app)
+        base_url = str(request.base_url).rstrip("/")
+        
         for s in subs_stream:
             data = s.to_dict()
             file_path = data.get("file_path")
             
             if file_path:
-                # LLAMADA A LA FUNCIÓN MANUAL
-                signed_url = generate_v4_signed_url_manual(BUCKET_NAME, file_path)
-                data["file_url"] = signed_url
+                # MODIFICADO: Apunta al Proxy en lugar de generar URL firmada
+                encoded_path = urllib.parse.quote(file_path)
+                data["file_url"] = f"{base_url}/api/evidence/proxy?path={encoded_path}"
             
             rec_doc = db.collection("artifacts").document(APP_ID).collection("public").document("data").collection("recommendations").document(data['recommendation_id']).get()
             if rec_doc.exists:
