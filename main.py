@@ -105,13 +105,32 @@ async def list_recommendations(user=Depends(get_current_user)):
 
 @app.post("/api/ai/analyze")
 async def analyze_barrier(data: BarrierInput, user=Depends(get_current_user)):
-    """Diagnóstico del Error 500: Verificamos disponibilidad del modelo y cuotas."""
+    """
+    Mejora del Motor PIDA (Plataforma de Investigación y Defensa Avanzada).
+    Utiliza un prompt estructurado para generar análisis de alto nivel institucional.
+    """
     try:
         if not MODEL_NAME:
             raise ValueError("La variable GEMINI_MODEL_NAME no está configurada")
             
         model = GenerativeModel(MODEL_NAME)
-        prompt = f"Analiza esta barrera institucional para el MNPT: {data.text}. Propón 3 soluciones."
+        
+        # Nuevo prompt estratégico para la marca PIDA
+        prompt = f"""
+        Actúa como la inteligencia central de PIDA (Plataforma de Investigación y Defensa Avanzada). 
+        Tu objetivo es realizar una INVESTIGACIÓN profunda y diseñar una estrategia de DEFENSA INSTITUCIONAL 
+        para el Mecanismo Nacional de Prevención de la Tortura (MNPT) de Costa Rica.
+
+        Obstáculo detectado: "{data.text}"
+
+        Genera un informe técnico estructurado de la siguiente manera:
+        1. DIAGNÓSTICO E INVESTIGACIÓN: Analiza con rigor las causas raíz (legales, políticas o administrativas) de esta barrera.
+        2. ESTRATEGIA DE DEFENSA AVANZADA: Diseña una hoja de ruta estratégica para neutralizar el obstáculo, vinculándola con el cumplimiento de los estándares internacionales (CAT/SPT).
+        3. TÁCTICAS DE INCIDENCIA: Propón 3 acciones técnicas de alto impacto para la toma de decisiones ejecutivas.
+
+        Mantén un tono ejecutivo, sofisticado, analítico y altamente profesional.
+        """
+        
         response = model.generate_content(prompt)
         return {"analysis": response.text}
     except Exception as e:
