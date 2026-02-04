@@ -4,9 +4,8 @@ import logging
 import datetime
 import json
 import re
-import hashlib
-import binascii
 import urllib.parse
+import time
 from typing import Optional, List, Dict, Any
 
 # --- IMPORTACIONES DE GOOGLE AUTH ---
@@ -39,7 +38,8 @@ BUCKET_NAME = os.getenv("STORAGE_BUCKET_NAME", f"{PROJECT_ID}.firebasestorage.ap
 MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "gemini-2.5-flash")
 LOCATION = "us-central1"
 
-app = FastAPI(title="SIIS-SPT PRO")
+# --- CAMBIO VISIBLE PARA VERIFICAR DESPLIEGUE ---
+app = FastAPI(title="VERIFICACION DE DESPLIEGUE V3")
 
 app.add_middleware(
     CORSMiddleware,
@@ -102,12 +102,6 @@ async def auth_me(user=Depends(get_current_user)):
         "is_admin": user.get("is_admin"),
         "role": user.get("role")
     }
-
-# --- ENDPOINT DE VERIFICACIÓN DE VERSIÓN ---
-@app.get("/api/version")
-async def check_version():
-    # Si puedes ver esto, el servidor se actualizó
-    return {"version": "NUEVA_ESTRATEGIA_PROXY_V2", "status": "active"}
 
 @app.get("/api/recommendations")
 async def list_recommendations(user=Depends(get_current_user)):
@@ -186,9 +180,6 @@ async def upload_evidence(
 @app.get("/api/evidence/proxy")
 async def download_proxy(path: str, token: str = Query(...)):
     try:
-        # LOG PARA VERIFICAR QUE LA PETICIÓN LLEGA AL SERVIDOR
-        logger.info(f"SOLICITUD PROXY RECIBIDA: {path}")
-        
         decoded_token = auth.verify_id_token(token)
         email = decoded_token.get("email")
         
@@ -224,26 +215,28 @@ async def download_proxy(path: str, token: str = Query(...)):
 
 @app.get("/api/admin/pending")
 async def list_pending(request: Request, user=Depends(get_current_user)):
+    """
+    MODIFICADO: Se agrega un parámetro 'v' (timestamp) a la URL generada
+    para garantizar que el navegador no reutilice enlaces viejos.
+    """
     if not user["is_admin"]:
         raise HTTPException(status_code=403)
     try:
-        # --- LOG CRÍTICO DE DEPURACIÓN ---
-        # Si no ves este mensaje en los logs de Google Cloud Run, NO se ha actualizado.
-        logger.info("EJECUTANDO VERSIÓN NUEVA: LISTANDO PENDIENTES CON PROXY RELATIVO")
-        
         subs_stream = db.collection("artifacts").document(APP_ID).collection("submissions").where("status", "==", "PENDIENTE").stream()
         results = []
         
+        # Timestamp actual para romper caché en la URL
+        ts = int(time.time())
+
         for s in subs_stream:
             data = s.to_dict()
             file_path = data.get("file_path")
             
             if file_path:
-                # ESTRATEGIA PROXY RELATIVO
+                # ESTRATEGIA PROXY RELATIVO + ANTI-CACHE QUERY PARAM
                 encoded_path = urllib.parse.quote(file_path)
-                # Esta es la línea clave. Si el navegador va a Google, esta línea no se está ejecutando.
-                data["file_url"] = f"/api/evidence/proxy?path={encoded_path}"
-                logger.info(f"URL Generada para {data.get('id')}: {data['file_url']}")
+                # Agregamos &v=... para que la URL sea única en cada petición
+                data["file_url"] = f"/api/evidence/proxy?path={encoded_path}&v={ts}"
             
             rec_doc = db.collection("artifacts").document(APP_ID).collection("public").document("data").collection("recommendations").document(data['recommendation_id']).get()
             if rec_doc.exists:
@@ -255,7 +248,7 @@ async def list_pending(request: Request, user=Depends(get_current_user)):
                 data["timestamp"] = data["timestamp"].isoformat()
             results.append(data)
             
-        # Headers anti-caché estrictos
+        # Headers anti-caché estrictos para el JSON de respuesta
         return JSONResponse(
             content=results,
             headers={
