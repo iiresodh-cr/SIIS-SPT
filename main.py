@@ -28,7 +28,7 @@ logger = logging.getLogger("SIIS-SPT-SERVER")
 PROJECT_ID = os.getenv("GCP_PROJECT_ID", "siis-stp")
 APP_ID = "siis-spt-cr"
 BUCKET_NAME = os.getenv("STORAGE_BUCKET_NAME", f"{PROJECT_ID}.firebasestorage.app")
-MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "gemini-2.5-flash") #
+MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "gemini-2.5-flash")
 LOCATION = "us-central1"
 
 app = FastAPI(title="SIIS-SPT PRO")
@@ -71,6 +71,7 @@ async def get_current_user(request: Request) -> Dict[str, Any]:
         decoded_token = auth.verify_id_token(token)
         email = decoded_token.get("email")
         
+        # Consulta de perfil en Firestore
         user_ref = db.collection("artifacts").document(APP_ID).collection("users").document(email)
         user_doc = user_ref.get()
         
@@ -112,56 +113,46 @@ async def list_recommendations(user=Depends(get_current_user)):
 
 @app.post("/api/admin/suggest-progress")
 async def suggest_progress(data: SuggestionInput, user=Depends(get_current_user)):
-    """
-    IA Consultora PIDA: Compara la meta con la evidencia y propone un % de avance.
-    """
+    """IA PIDA: Analiza el gap entre recomendación y evidencia."""
     if not user["is_admin"]:
         raise HTTPException(status_code=403, detail="Solo administradores")
     
     try:
-        # 1. Obtener la meta (Recomendación)
-        rec_ref = db.collection("artifacts").document(APP_ID).collection("public").document("data").collection("recommendations").document(data.recommendation_id)
-        rec_doc = rec_ref.get()
-        
-        # 2. Obtener la evidencia (Submission)
-        sub_ref = db.collection("artifacts").document(APP_ID).collection("submissions").document(data.submission_id)
-        sub_doc = sub_ref.get()
+        # Obtener Meta y Logro
+        rec_doc = db.collection("artifacts").document(APP_ID).collection("public").document("data").collection("recommendations").document(data.recommendation_id).get()
+        sub_doc = db.collection("artifacts").document(APP_ID).collection("submissions").document(data.submission_id).get()
         
         if not rec_doc.exists or not sub_doc.exists:
-            raise HTTPException(status_code=404, detail="Datos no encontrados")
+            raise HTTPException(status_code=404, detail="Documentos no encontrados")
 
         meta = rec_doc.to_dict().get("description", "")
         logro = sub_doc.to_dict().get("description", "")
 
         model = GenerativeModel(MODEL_NAME)
         prompt = f"""
-        Como auditor senior del MNPT, evalúa este avance técnico.
-        RECOMENDACIÓN ORIGINAL: "{meta}"
-        LOGRO REPORTADO: "{logro}"
+        Como experto auditor del MNPT, evalúa este avance:
+        RECOMENDACIÓN: "{meta}"
+        EVIDENCIA PRESENTADA: "{logro}"
 
-        Determina qué porcentaje de cumplimiento (0 a 100) representa este logro respecto a la meta total. 
-        Responde exclusivamente en formato JSON con dos campos:
-        "percentage": (un número entero)
-        "justification": (una breve explicación técnica de por qué ese valor)
+        Propón un porcentaje de cumplimiento (0-100) y justifica técnicamente.
+        Responde exclusivamente en JSON: {{"percentage": valor, "justification": "texto"}}
         """
         
         response = model.generate_content(prompt)
-        # Limpieza básica de la respuesta para extraer JSON
-        clean_json = re.search(r'\{.*\}', response.text, re.DOTALL).group()
-        return json.loads(clean_json)
+        match = re.search(r'\{.*\}', response.text, re.DOTALL)
+        return json.loads(match.group())
     except Exception as e:
-        logger.error(f"Error en Sugerencia IA: {str(e)}")
-        raise HTTPException(status_code=500, detail="Error al generar propuesta de IA")
+        logger.error(f"Fallo Sugerencia IA: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error en Motor PIDA")
 
 @app.post("/api/ai/analyze")
 async def analyze_barrier(data: BarrierInput, user=Depends(get_current_user)):
     try:
         model = GenerativeModel(MODEL_NAME)
         prompt = f"""
-        Actúa como la inteligencia central de PIDA (Plataforma de Investigación y Defensa Avanzada). 
-        Analiza este obstáculo para el MNPT de Costa Rica: "{data.text}"
-        Genera: 1. DIAGNÓSTICO, 2. ESTRATEGIA DE DEFENSA, 3. TÁCTICAS DE INCIDENCIA.
-        Tono ejecutivo y profesional.
+        Actúa como la inteligencia de PIDA (Plataforma de Investigación y Defensa Avanzada). 
+        Analiza este obstáculo institucional para el MNPT: "{data.text}"
+        Genera un informe con: 1. INVESTIGACIÓN DE CAUSAS, 2. ESTRATEGIA DE DEFENSA, 3. TÁCTICAS DE INCIDENCIA.
         """
         response = model.generate_content(prompt)
         return {"analysis": response.text}
@@ -176,60 +167,77 @@ async def upload_evidence(
     user=Depends(get_current_user)
 ):
     try:
+        # 1. Subida al Bucket
         bucket = storage_client.bucket(BUCKET_NAME)
         blob = bucket.blob(f"evidence/{recommendation_id}/{file.filename}")
         blob.upload_from_file(file.file, content_type=file.content_type)
-        signed_url = blob.generate_signed_url(version="v4", expiration=datetime.timedelta(minutes=10080), method="GET")
         
+        # 2. Generación de URL Segura (Con fallback si fallan los permisos IAM)
+        try:
+            file_url = blob.generate_signed_url(version="v4", expiration=datetime.timedelta(minutes=10080), method="GET")
+        except Exception:
+            logger.warning("Fallo al firmar URL. Usando URL de consola.")
+            file_url = f"https://storage.cloud.google.com/{BUCKET_NAME}/evidence/{recommendation_id}/{file.filename}"
+        
+        # 3. Escritura en Firestore
         sub_ref = db.collection("artifacts").document(APP_ID).collection("submissions").document()
         sub_ref.set({
             "id": sub_ref.id,
             "recommendation_id": recommendation_id,
             "submitted_by": user["email"],
             "description": description,
-            "file_url": signed_url,
+            "file_url": file_url,
             "status": "PENDIENTE",
             "timestamp": firestore.SERVER_TIMESTAMP
         })
-        return {"message": "Subida exitosa"}
+        return {"message": "Evidencia registrada correctamente"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"FALLO CRÍTICO EN CARGA: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error en servidor: {str(e)}")
 
 @app.get("/api/admin/pending")
 async def list_pending(user=Depends(get_current_user)):
     if not user["is_admin"]: raise HTTPException(status_code=403)
-    subs = db.collection("artifacts").document(APP_ID).collection("submissions").where("status", "==", "PENDIENTE").stream()
-    results = []
-    for s in subs:
-        d = s.to_dict()
-        if "timestamp" in d and d["timestamp"]: d["timestamp"] = d["timestamp"].isoformat()
-        results.append(d)
-    return results
+    try:
+        subs = db.collection("artifacts").document(APP_ID).collection("submissions").where("status", "==", "PENDIENTE").stream()
+        results = []
+        for s in subs:
+            d = s.to_dict()
+            if "timestamp" in d and d["timestamp"]: d["timestamp"] = d["timestamp"].isoformat()
+            results.append(d)
+        return results
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Error al recuperar pendientes")
 
 @app.post("/api/admin/approve")
 async def approve_submission(action: SubmissionAction, user=Depends(get_current_user)):
     if not user["is_admin"]: raise HTTPException(status_code=403)
-    sub_ref = db.collection("artifacts").document(APP_ID).collection("submissions").document(action.submission_id)
-    sub_doc = sub_ref.get()
-    if not sub_doc.exists: raise HTTPException(status_code=404)
-    
-    rec_id = sub_doc.to_dict().get("recommendation_id")
-    sub_ref.update({"status": "APROBADO"})
-    
-    rec_ref = db.collection("artifacts").document(APP_ID).collection("public").document("data").collection("recommendations").document(rec_id)
-    rec_ref.update({
-        "progress": action.progress,
-        "status": "Completado" if action.progress >= 100 else "En Progreso",
-        "last_validated": firestore.SERVER_TIMESTAMP
-    })
-    return {"message": "Actualizado"}
+    try:
+        sub_ref = db.collection("artifacts").document(APP_ID).collection("submissions").document(action.submission_id)
+        sub_doc = sub_ref.get()
+        if not sub_doc.exists: raise HTTPException(status_code=404)
+        
+        rec_id = sub_doc.to_dict().get("recommendation_id")
+        
+        # Actualización de estados en cadena
+        sub_ref.update({"status": "APROBADO"})
+        rec_ref = db.collection("artifacts").document(APP_ID).collection("public").document("data").collection("recommendations").document(rec_id)
+        rec_ref.update({
+            "progress": action.progress,
+            "status": "Completado" if action.progress >= 100 else "En Progreso",
+            "last_validated": firestore.SERVER_TIMESTAMP
+        })
+        return {"message": f"Avance actualizado al {action.progress}%"}
+    except Exception as e:
+        logger.error(f"Error en aprobación: {str(e)}")
+        raise HTTPException(status_code=500, detail="Fallo en base de datos")
 
 @app.get("/api/report/generate")
 async def generate_pdf(user=Depends(get_current_user)):
     recs = db.collection("artifacts").document(APP_ID).collection("public").document("data").collection("recommendations").stream()
     buffer = io.BytesIO()
     p = canvas.Canvas(buffer, pagesize=letter)
-    p.setFont("Helvetica-Bold", 16); p.drawString(50, 750, "SIIS-SPT: Informe"); y = 700
+    p.setFont("Helvetica-Bold", 16); p.drawString(50, 750, "SIIS-SPT: Informe Oficial"); y = 700
     for doc in recs:
         d = doc.to_dict()
         p.setFont("Helvetica-Bold", 10); p.drawString(50, y, f"[{d.get('id')}] {d.get('institution')}")
