@@ -52,18 +52,11 @@
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
 
-        /* Estilos específicos para que el informe PIDA se vea bien */
-        #ai-result h1, #ai-result h2, #ai-result h3 { 
-            font-weight: 800; 
-            color: #1e293b;
-            margin-top: 1.5rem;
-            margin-bottom: 0.75rem;
-        }
+        #ai-result h1, #ai-result h2, #ai-result h3 { font-weight: 800; color: #1e293b; margin-top: 1.5rem; margin-bottom: 0.75rem; }
         #ai-result h3 { font-size: 1.5rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.5rem; }
         #ai-result p { margin-bottom: 1rem; }
         #ai-result ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; }
         #ai-result strong { color: var(--brand-color); font-weight: 700; }
-        #ai-result hr { margin: 2rem 0; border-color: #e2e8f0; }
 
         .glass-effect {
             background: rgba(255, 255, 255, 0.7);
@@ -145,9 +138,9 @@
             <div class="flex justify-between items-end mb-12">
                 <div>
                     <h2 class="text-6xl font-black text-slate-800 tracking-tighter mb-3">Auditoría</h2>
-                    <p class="text-slate-500 font-semibold text-xl">Estado de cumplimiento de recomendaciones internacionales.</p>
+                    <p class="text-slate-500 font-semibold text-xl">Estado de cumplimiento institucional.</p>
                 </div>
-                <div id="inst-tag" class="bg-white px-8 py-4 rounded-3xl border border-slate-200 shadow-sm text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 italic">
+                <div id="inst-tag" class="bg-white px-8 py-4 rounded-3xl border border-slate-200 shadow-sm text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 italic">
                     Sincronizando...
                 </div>
             </div>
@@ -156,8 +149,8 @@
                 <table class="w-full text-left table-fixed">
                     <thead class="bg-slate-50 border-b border-slate-100">
                         <tr>
-                            <th class="w-1/4 p-10 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">ID e Institución</th>
-                            <th class="w-2/5 p-10 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Contenido Recomendación</th>
+                            <th class="w-1/4 p-10 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Identificación</th>
+                            <th class="w-2/5 p-10 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Descripción Técnica</th>
                             <th class="w-1/5 p-10 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] text-center">Avance</th>
                             <th class="w-auto p-10 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Gestión</th>
                         </tr>
@@ -175,8 +168,8 @@
                 
                 <div class="bg-white p-14 rounded-[3.5rem] border border-slate-200 shadow-2xl">
                     <div class="mb-10">
-                        <label class="block text-xs font-black text-slate-400 uppercase tracking-[0.3em] mb-6">Describa la barrera o el obstáculo institucional:</label>
-                        <textarea id="ai-input" class="w-full h-64 p-10 bg-slate-50 border-0 rounded-[2.5rem] focus:ring-4 focus:ring-[#009EDB]/10 outline-none transition-all text-2xl leading-relaxed" placeholder="Ej: No existe presupuesto para la capacitación anual..."></textarea>
+                        <label class="block text-xs font-black text-slate-400 uppercase tracking-[0.3em] mb-6">Descripción del Obstáculo:</label>
+                        <textarea id="ai-input" class="w-full h-64 p-10 bg-slate-50 border-0 rounded-[2.5rem] focus:ring-4 focus:ring-[#009EDB]/10 outline-none transition-all text-2xl leading-relaxed" placeholder="Ej: No existe voluntad política..."></textarea>
                     </div>
                     
                     <button onclick="analyzeInstitutionalBarrier()" id="ai-btn" class="w-full text-white py-7 rounded-[2rem] font-black text-xl uppercase tracking-widest shadow-2xl transition-all active:scale-95 flex items-center justify-center hover:opacity-90" style="background-color: var(--brand-color);">Ejecutar Análisis PIDA</button>
@@ -220,10 +213,10 @@
                 
                 <div class="p-8 bg-slate-50 border-4 border-dashed border-slate-200 rounded-[2.5rem] flex flex-col items-center">
                     <label class="block text-[10px] font-black uppercase text-slate-400 mb-6 tracking-widest">Documento Probatorio (PDF):</label>
-                    <input type="file" id="modal-file" class="block w-full text-sm text-slate-500 file:mr-6 file:py-4 file:px-8 file:rounded-full file:border-0 file:text-[11px] file:font-bold file:bg-[#009EDB] file:text-white hover:file:bg-[#0086ba] cursor-pointer">
+                    <input type="file" id="modal-file" class="block w-full text-sm text-slate-500 file:mr-6 file:py-4 file:px-8 file:rounded-full file:border-0 file:text-[11px] file:font-black file:bg-[#009EDB] file:text-white hover:file:bg-[#0086ba] cursor-pointer">
                 </div>
 
-                <button onclick="processEvidenceUpload()" id="btn-submit-ev" class="w-full py-6 text-white rounded-[2rem] font-black text-sm uppercase tracking-[0.2em] shadow-2xl transition-all active:scale-95 hover:opacity-90" style="background-color: var(--brand-color);">Sincronizar Evidencia</button>
+                <button onclick="processEvidenceUpload()" id="btn-submit-ev" class="w-full py-6 text-white rounded-[2rem] font-black text-sm uppercase tracking-[0.2em] shadow-2xl transition-all active:scale-95 hover:opacity-90" style="background-color: var(--brand-color);">Sincronizar con Storage</button>
             </div>
         </div>
     </div>
@@ -252,14 +245,9 @@
         async function syncSystemData(user) {
             const token = await user.getIdToken();
             try {
-                const authMeRes = await fetch('/api/auth/me', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                const authMeRes = await fetch('/api/auth/me', { headers: { 'Authorization': `Bearer ${token}` } });
                 const profile = await authMeRes.json();
-
-                const isAdmin = profile.is_admin || 
-                                user.email === "durquilla@iiresodh.org" || 
-                                user.email === "prueba@iiresodh.org";
+                const isAdmin = profile.is_admin || user.email === "durquilla@iiresodh.org" || user.email === "prueba@iiresodh.org";
 
                 if (isAdmin) {
                     document.getElementById('admin-tab').classList.remove('hidden');
@@ -271,17 +259,12 @@
                     document.getElementById('inst-tag').innerText = "Acceso: Punto Focal";
                 }
 
-                const recRes = await fetch('/api/recommendations', { 
-                    headers: { 'Authorization': `Bearer ${token}` } 
-                });
+                const recRes = await fetch('/api/recommendations', { headers: { 'Authorization': `Bearer ${token}` } });
                 const recommendations = await recRes.json();
                 renderDashboard(recommendations);
-            } catch (err) {
-                console.error("Falla en sincronización maestra:", err);
-            }
+            } catch (err) { console.error(err); }
         }
 
-        // Renderizado del Dashboard con IDs Prominentes y Descripciones
         function renderDashboard(data) {
             const list = document.getElementById('recommendations-list');
             list.innerHTML = data.map(item => `
@@ -290,13 +273,11 @@
                         <div class="text-[14px] font-black text-[#009EDB] font-mono tracking-tight uppercase mb-3 bg-[#009EDB]/5 px-4 py-2 rounded-lg inline-block border border-[#009EDB]/10">
                             ${item.id || 'CAT-XX'}
                         </div>
-                        <div class="font-black text-slate-800 text-lg tracking-tight leading-tight mt-2 italic">
-                            ${item.institution}
-                        </div>
+                        <div class="font-black text-slate-800 text-lg tracking-tight leading-tight mt-2 italic">${item.institution}</div>
                     </td>
                     <td class="p-10 align-top">
                         <p class="text-slate-500 font-semibold text-base leading-relaxed line-clamp-4 hover:line-clamp-none transition-all duration-300">
-                            ${item.description || 'Consultando descripción técnica en Firestore...'}
+                            ${item.description || 'Consultando Firestore...'}
                         </p>
                     </td>
                     <td class="p-10 text-center align-top pt-12">
@@ -322,14 +303,11 @@
             const btn = document.getElementById('ai-btn');
             const resDiv = document.getElementById('ai-result');
             const token = await firebase.auth().currentUser.getIdToken();
-
             if (!text.trim()) return;
-            
             btn.disabled = true; 
             resDiv.classList.remove('hidden'); 
             resDiv.innerHTML = '<div class="flex items-center font-bold text-2xl text-slate-400 p-8"><i data-lucide="refresh-cw" class="animate-spin mr-5 w-8 h-8"></i> Consultando Motor PIDA...</div>';
             lucide.createIcons();
-
             try {
                 const res = await fetch('/api/ai/analyze', {
                     method: 'POST',
@@ -337,21 +315,15 @@
                     body: JSON.stringify({ text: text })
                 });
                 const data = await res.json();
-                // FIX: Procesamos el Markdown aquí con marked.parse()
                 resDiv.innerHTML = marked.parse(data.analysis);
-            } catch (e) {
-                resDiv.innerHTML = "<div class='p-8 text-red-500 font-bold'>Error crítico en el motor de incidencia IA.</div>";
-            } finally {
-                btn.disabled = false;
-                lucide.createIcons();
-            }
+            } catch (e) { resDiv.innerHTML = "<div class='p-8 text-red-500 font-bold'>Error técnico.</div>"; }
+            finally { btn.disabled = false; lucide.createIcons(); }
         }
 
         async function loadPendingAdminQueue() {
             const token = await firebase.auth().currentUser.getIdToken();
             const res = await fetch('/api/admin/pending', { headers: { 'Authorization': `Bearer ${token}` } });
             const data = await res.json();
-            
             if (data.length > 0) {
                 const container = document.getElementById('admin-pending-container');
                 container.innerHTML = data.map(sub => `
@@ -365,7 +337,7 @@
                             </a>
                         </div>
                         <div class="flex flex-col space-y-4">
-                            <button class="px-10 py-5 text-white rounded-[1.5rem] text-[11px] font-black uppercase shadow-xl hover:opacity-90 transition-all" style="background-color: #009EDB;">Validar Avance</button>
+                            <button onclick="approveSubmission('${sub.id}')" class="px-10 py-5 text-white rounded-[1.5rem] text-[11px] font-black uppercase shadow-xl hover:opacity-90 transition-all active:scale-95" style="background-color: #009EDB;">Validar Avance</button>
                             <button class="px-10 py-5 border border-slate-200 rounded-[1.5rem] text-[11px] font-black uppercase text-slate-300 hover:bg-red-50 hover:text-red-500 transition-all">Denegar</button>
                         </div>
                     </div>
@@ -374,21 +346,32 @@
             }
         }
 
+        async function approveSubmission(submissionId) {
+            if (!confirm("¿Deseas validar esta evidencia?")) return;
+            const token = await firebase.auth().currentUser.getIdToken();
+            try {
+                const res = await fetch('/api/admin/approve', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ submission_id: submissionId })
+                });
+                if (res.ok) { alert("Evidencia validada."); loadPendingAdminQueue(); }
+                else { alert("Error al validar."); }
+            } catch (e) { alert("Error de conexión."); }
+        }
+
         async function processEvidenceUpload() {
             const btn = document.getElementById('btn-submit-ev');
             const fileInput = document.getElementById('modal-file');
             const token = await firebase.auth().currentUser.getIdToken();
             const recommendationId = document.getElementById('modal-rec-id').value;
             const description = document.getElementById('modal-desc').value;
-
             if (!fileInput.files[0] || !recommendationId) { alert("Archivo requerido."); return; }
-            
             btn.disabled = true; btn.innerText = "Sincronizando...";
             const formData = new FormData();
             formData.append('recommendation_id', recommendationId);
             formData.append('description', description);
             formData.append('file', fileInput.files[0]);
-
             try {
                 const res = await fetch('/api/evidence/upload', {
                     method: 'POST',
@@ -398,11 +381,7 @@
                 const result = await res.json();
                 alert(result.message || "Evidencia cargada.");
                 closeModal();
-            } catch (e) {
-                alert("Falla de red.");
-            } finally {
-                btn.disabled = false; btn.innerText = "Sincronizar Evidencia";
-            }
+            } catch (e) { alert("Falla de red."); } finally { btn.disabled = false; btn.innerText = "Sincronizar Evidencia"; }
         }
 
         function openModal(id) { document.getElementById('modal-rec-id').value = id; document.getElementById('upload-modal').classList.remove('hidden'); }
@@ -413,7 +392,6 @@
             document.getElementById(tabId).classList.add('active');
             el.classList.add('active');
         }
-
         async function handleLogin() {
             const email = document.getElementById('login-email').value;
             const pass = document.getElementById('login-pass').value;
@@ -422,9 +400,7 @@
             try { await firebase.auth().signInWithEmailAndPassword(email, pass); } 
             catch (e) { alert("Error: " + e.message); btn.disabled = false; btn.innerText = "Iniciar Sesión"; }
         }
-
         function handleLogout() { firebase.auth().signOut(); window.location.reload(); }
-
         async function downloadOfficialReport() {
             const token = await firebase.auth().currentUser.getIdToken();
             const res = await fetch('/api/report/generate', { headers: { 'Authorization': `Bearer ${token}` } });
