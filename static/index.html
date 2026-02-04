@@ -15,24 +15,34 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
     <style>
-        /* IMPORTACIÓN Y FIJACIÓN DE FUENTE */
+        /* FIJACIÓN ESTRICTA DE LA FUENTE PLUS JAKARTA SANS */
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
         
         :root {
             --brand-color: #009EDB;
+            --sidebar-width: 280px;
         }
 
-        /* RESET VISUAL SIN RECORTES */
+        /* REGLAS DE NORMALIZACIÓN PARA QUE EL CONTENIDO QUEPA */
+        * {
+            box-sizing: border-box;
+        }
+
         body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
+            font-family: 'Plus Jakarta Sans', sans-serif !important; 
             background-color: #f1f5f9;
             color: #0f172a;
             margin: 0;
             padding: 0;
+            overflow: hidden;
+            height: 100vh;
+            font-size: 14px; /* Tamaño base reducido para legibilidad profesional */
         }
 
+        /* GESTIÓN DE PESTAÑAS */
         .tab-content { 
             display: none; 
+            height: 100%;
         }
 
         .tab-content.active { 
@@ -43,7 +53,7 @@
         @keyframes slideUp { 
             from { 
                 opacity: 0; 
-                transform: translateY(20px); 
+                transform: translateY(15px); 
             } 
             to { 
                 opacity: 1; 
@@ -51,7 +61,7 @@
             } 
         }
 
-        /* SIDEBAR ESTRICTA */
+        /* ESTILOS DE LA SIDEBAR EXPANDIDOS */
         .sidebar-item {
             color: rgba(255, 255, 255, 0.7);
             transition: all 0.3s ease;
@@ -59,8 +69,13 @@
             display: flex;
             align-items: center;
             width: 100%;
-            padding: 1.5rem;
-            border-radius: 1.5rem;
+            padding: 1rem 1.25rem;
+            border-radius: 1rem;
+            margin-bottom: 0.5rem;
+            border: 1px solid transparent;
+            cursor: pointer;
+            text-align: left;
+            background: none;
         }
 
         .sidebar-item:hover {
@@ -71,132 +86,146 @@
         .sidebar-item.active { 
             background-color: white; 
             color: var(--brand-color); 
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             font-weight: 800;
         }
 
-        /* ID PROTAGONISTA EN BLOQUE */
-        .id-badge {
-            background-color: #eff6ff;
+        /* ID PROTAGONISTA: EL CAMPO 'id' DEBE PREDOMINAR */
+        .id-main-title {
             color: var(--brand-color);
-            padding: 10px 20px;
-            border-radius: 14px;
             font-weight: 800;
-            font-size: 14px;
-            letter-spacing: 0.02em;
+            font-size: 1.1rem;
+            letter-spacing: -0.01em;
+            display: block;
+            margin-bottom: 0.25rem;
             text-transform: uppercase;
-            border: 1px solid rgba(0, 158, 219, 0.2);
-            display: inline-block;
-            margin-bottom: 12px;
-            font-family: 'Plus Jakarta Sans', sans-serif;
         }
 
-        /* FORMATO PIDA EXPANDIDO */
+        .inst-sub-title {
+            font-weight: 600;
+            color: #64748b;
+            font-size: 0.9rem;
+            font-style: italic;
+        }
+
+        /* CONTENEDOR DE INPUT DE PORCENTAJE (CORRECCIÓN DE ANCHO) */
+        .percentage-input-wrapper {
+            width: 200px !important; /* Asegura que el contenido no se corte */
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .input-avance-final {
+            width: 100% !important;
+            padding: 1rem !important;
+            border: 2px solid #e2e8f0 !important;
+            border-radius: 1.5rem !important;
+            text-align: center !important;
+            font-weight: 800 !important;
+            font-size: 1.5rem !important;
+            color: var(--brand-color) !important;
+            outline: none !important;
+            transition: border-color 0.2s;
+            background-color: white !important;
+        }
+
+        .input-avance-final:focus {
+            border-color: var(--brand-color) !important;
+        }
+
+        /* FORMATEO DE INFORMES PIDA */
         #ai-result h3 { 
-            font-size: 1.6rem; 
+            font-size: 1.4rem; 
             font-weight: 800; 
             color: #1e293b; 
-            margin-top: 1.5rem; 
-            border-bottom: 3px solid #e2e8f0; 
-            padding-bottom: 0.5rem; 
+            margin-top: 1.25rem; 
+            border-bottom: 2px solid #e2e8f0; 
+            padding-bottom: 0.4rem; 
         }
 
         #ai-result p { 
-            margin-bottom: 1.25rem; 
-            line-height: 1.8; 
-            font-size: 1.1rem;
+            margin-bottom: 1rem; 
+            line-height: 1.6; 
         }
 
         #ai-result strong { 
             color: var(--brand-color); 
-            font-weight: 800; 
+            font-weight: 700; 
         }
 
-        .glass-effect {
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+        /* COMPONENTES DE TABLA */
+        .table-container {
+            background-color: white;
+            border-radius: 2.5rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05);
+            border: 1px solid #f1f5f9;
+            overflow: hidden;
         }
 
-        /* CORRECCIÓN DE ANCHO DE INPUT */
-        .input-percentage {
-            width: 160px; /* Incrementado para evitar cortes */
-            padding: 1.5rem;
-            border: 2px solid #e2e8f0;
-            border-radius: 2rem;
-            text-align: center;
-            font-weight: 800;
-            font-size: 1.875rem;
-            color: var(--brand-color);
-            outline: none;
-            transition: all 0.3s;
-        }
-        
-        .input-percentage:focus {
-            ring: 8px;
-            ring-color: rgba(0, 158, 219, 0.1);
-            border-color: var(--brand-color);
+        .table-row:hover {
+            background-color: #f8fafc;
         }
     </style>
 </head>
-<body class="flex h-screen overflow-hidden">
+<body class="flex">
 
     <div 
         id="login-screen" 
-        class="fixed inset-0 bg-slate-900 z-[110] flex items-center justify-center p-6"
+        class="fixed inset-0 bg-slate-900 z-[110] flex items-center justify-center p-4"
     >
-        <div class="bg-white p-14 rounded-[3.5rem] shadow-2xl max-w-sm w-full border border-slate-200 text-center">
+        <div class="bg-white p-12 rounded-[3.5rem] shadow-2xl max-w-sm w-full border border-slate-200 text-center">
             
-            <div class="mb-12">
+            <div class="mb-10">
                 <div 
-                    class="inline-flex p-6 rounded-[2.5rem] shadow-xl mb-8" 
+                    class="inline-flex p-5 rounded-[2rem] shadow-xl mb-8" 
                     style="background-color: var(--brand-color);"
                 >
                     <i 
                         data-lucide="shield-check" 
-                        class="text-white w-12 h-12"
+                        class="text-white w-10 h-10"
                     ></i>
                 </div>
                 
-                <h1 class="text-4xl font-black text-slate-800 tracking-tighter">SIIS-SPT</h1>
+                <h1 class="text-3xl font-black text-slate-800 tracking-tighter">SIIS-SPT</h1>
                 
-                <p class="text-slate-400 text-xs font-bold uppercase tracking-[0.2em] mt-4">
-                    Auditoría y Monitoreo CR
+                <p class="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em] mt-4">
+                    Costa Rica Auditoría
                 </p>
             </div>
             
-            <div class="space-y-5 text-left">
+            <div class="space-y-4 text-left">
                 
                 <div class="relative">
                     <i 
                         data-lucide="user" 
-                        class="absolute left-5 top-5 w-5 h-5 text-slate-400"
+                        class="absolute left-4 top-4 w-5 h-5 text-slate-400"
                     ></i>
                     <input 
                         type="email" 
                         id="login-email" 
-                        placeholder="Correo Institucional" 
-                        class="w-full pl-14 pr-5 py-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-[#009EDB]/20 transition-all"
+                        placeholder="Usuario Institucional" 
+                        class="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-[#009EDB]/20 transition-all font-bold"
                     >
                 </div>
                 
                 <div class="relative">
                     <i 
                         data-lucide="lock" 
-                        class="absolute left-5 top-5 w-5 h-5 text-slate-400"
+                        class="absolute left-4 top-4 w-5 h-5 text-slate-400"
                     ></i>
                     <input 
                         type="password" 
                         id="login-pass" 
                         placeholder="Contraseña" 
-                        class="w-full pl-14 pr-5 py-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-[#009EDB]/20 transition-all"
+                        class="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-[#009EDB]/20 transition-all font-bold"
                     >
                 </div>
                 
                 <button 
                     onclick="handleLogin()" 
                     id="btn-login" 
-                    class="w-full text-white py-6 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-2xl transition-all active:scale-95 hover:opacity-95" 
+                    class="w-full text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-2xl transition-all active:scale-95 hover:opacity-95" 
                     style="background-color: var(--brand-color);"
                 >
                     Iniciar Sesión
@@ -206,108 +235,110 @@
     </div>
 
     <aside 
-        class="w-80 flex flex-col shrink-0 shadow-2xl" 
+        class="w-[280px] flex flex-col shrink-0 shadow-xl" 
         style="background-color: var(--brand-color); color: white;"
     >
         
-        <div class="p-10 bg-white border-b border-slate-100 mb-10 flex flex-col items-center justify-center text-center">
+        <div class="p-8 bg-white border-b border-slate-100 mb-8 flex flex-col items-center justify-center text-center">
             <img 
                 src="https://storage.googleapis.com/mnpt-img/image002.png" 
-                alt="MNPT Logo" 
-                class="h-24 w-auto object-contain"
+                alt="Logo MNPT" 
+                class="h-20 w-auto object-contain"
             >
-            <p class="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-6 leading-tight">
-                Plataforma Técnica SPT/CAT
+            <p class="text-[9px] text-slate-400 font-black uppercase tracking-widest mt-4 leading-tight">
+                Plataforma SPT/CAT
             </p>
         </div>
 
-        <nav class="flex-1 px-5 space-y-4">
+        <nav class="flex-1 px-4 space-y-2">
             
             <button 
                 onclick="switchTab('dashboard', this)" 
-                class="sidebar-item active group"
+                class="sidebar-item active"
             >
-                <i data-lucide="layout-dashboard" class="mr-4 w-7 h-7"></i>
-                <span class="font-bold text-sm uppercase tracking-tight">Dashboard</span>
+                <i data-lucide="layout-dashboard" class="mr-3 w-5 h-5"></i>
+                <span class="text-xs uppercase tracking-tight">Dashboard</span>
             </button>
             
             <button 
                 onclick="switchTab('laboratorio', this)" 
-                class="sidebar-item group"
+                class="sidebar-item"
             >
-                <i data-lucide="brain-circuit" class="mr-4 w-7 h-7"></i>
-                <span class="font-bold text-sm uppercase tracking-tight">Laboratorio PIDA</span>
+                <i data-lucide="brain-circuit" class="mr-3 w-5 h-5"></i>
+                <span class="text-xs uppercase tracking-tight">Laboratorio PIDA</span>
             </button>
 
             <button 
                 id="admin-tab" 
                 onclick="switchTab('admin', this)" 
-                class="sidebar-item hidden bg-white/10 border border-white/20 group"
+                class="sidebar-item hidden bg-white/10 border border-white/20"
             >
-                <i data-lucide="shield-check" class="mr-4 w-7 h-7"></i>
-                <span class="font-bold text-sm uppercase tracking-tight">Panel de Validación</span>
+                <i data-lucide="shield-check" class="mr-3 w-5 h-5"></i>
+                <span class="text-xs uppercase tracking-tight">Validación Técnica</span>
             </button>
             
-            <div class="pt-12 border-t border-white/20 mt-10 px-5 text-center">
+            <div class="pt-8 border-t border-white/20 mt-8 px-4">
                 <button 
                     onclick="downloadOfficialReport()" 
-                    class="w-full flex items-center p-5 rounded-2xl hover:bg-white/10 text-white transition-all"
+                    class="w-full flex items-center p-4 rounded-xl hover:bg-white/10 text-white transition-all"
                 >
-                    <i data-lucide="file-text" class="mr-4 w-6 h-6"></i>
-                    <span class="font-black text-[11px] uppercase tracking-widest">Generar Reporte PDF</span>
+                    <i data-lucide="file-text" class="mr-3 w-5 h-5"></i>
+                    <span class="font-black text-[9px] uppercase tracking-widest">Generar Reporte PDF</span>
                 </button>
             </div>
         </nav>
 
-        <div class="p-10 border-t border-white/20 bg-black/5 text-center">
-            <div id="user-info-section" class="mb-8 hidden">
+        <div class="p-8 border-t border-white/20 bg-black/5 text-center">
+            <div id="user-info-section" class="mb-6 hidden">
                 <div 
                     id="display-email" 
-                    class="text-[11px] font-bold text-white truncate bg-white/10 p-5 rounded-2xl border border-white/20"
+                    class="text-[10px] font-bold text-white truncate bg-white/10 p-4 rounded-xl border border-white/20"
                 ></div>
             </div>
+            
             <button 
                 onclick="handleLogout()" 
-                class="w-full flex items-center p-5 rounded-2xl text-white hover:bg-red-500 transition-all font-black text-[11px] uppercase tracking-widest"
+                class="w-full flex items-center p-4 rounded-xl text-white hover:bg-red-500 transition-all font-black text-[9px] uppercase tracking-widest"
             >
-                <i data-lucide="log-out" class="mr-4 w-6 h-6"></i> Cerrar Sesión
+                <i data-lucide="log-out" class="mr-3 w-5 h-5"></i> Cerrar Sesión
             </button>
         </div>
     </aside>
 
-    <main class="flex-1 overflow-y-auto p-12 lg:p-20">
+    <main class="flex-1 overflow-y-auto p-10 lg:p-14">
         
         <div 
             id="dashboard" 
             class="tab-content active"
         >
-            <div class="flex justify-between items-end mb-16">
+            <div class="flex justify-between items-end mb-10">
                 <div>
-                    <h2 class="text-7xl font-black text-slate-800 tracking-tighter mb-4">Auditoría</h2>
-                    <p class="text-slate-500 font-semibold text-2xl italic">Cumplimiento institucional oficial.</p>
+                    <h2 class="text-5xl font-black text-slate-800 tracking-tighter mb-2">Auditoría</h2>
+                    <p class="text-slate-500 font-semibold text-lg italic">Estado institucional oficial.</p>
                 </div>
+                
                 <div 
                     id="inst-tag" 
-                    class="bg-white px-10 py-5 rounded-3xl border border-slate-200 shadow-sm text-xs font-black uppercase tracking-widest text-slate-400 italic"
+                    class="bg-white px-8 py-3 rounded-2xl border border-slate-200 shadow-sm text-[10px] font-black uppercase tracking-widest text-slate-400 italic"
                 >
                     Sincronizando...
                 </div>
             </div>
 
-            <div class="bg-white rounded-[4rem] shadow-2xl border border-slate-100 overflow-hidden">
+            <div class="table-container">
                 <table class="w-full text-left table-fixed">
                     <thead class="bg-slate-50 border-b">
                         <tr>
-                            <th class="w-1/3 p-12 text-xs font-black text-slate-400 uppercase tracking-widest">
-                                Identificación y Meta
+                            <th class="w-1/3 p-10 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                ID y Meta Maestra
                             </th>
-                            <th class="w-2/5 p-12 text-xs font-black text-slate-400 uppercase tracking-widest">
+                            <th class="w-2/5 p-10 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                 Descripción Técnica
                             </th>
-                            <th class="w-1/5 p-12 text-center text-xs font-black text-slate-400 uppercase tracking-widest">
+                            <th class="w-1/5 p-10 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                 Avance
                             </th>
-                            <th class="w-auto p-12 text-right text-xs font-black text-slate-400 uppercase tracking-widest">
+                            <th class="w-auto p-10 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                 Gestión
                             </th>
                         </tr>
@@ -325,34 +356,35 @@
             id="laboratorio" 
             class="tab-content"
         >
-            <div class="max-w-5xl mx-auto text-center">
-                <h2 class="text-7xl font-black text-slate-800 mb-5 tracking-tighter">Motor PIDA</h2>
-                <p class="text-slate-500 mb-16 text-2xl font-medium italic">Plataforma de Investigación y Defensa Avanzada.</p>
+            <div class="max-w-4xl mx-auto text-center">
+                <h2 class="text-5xl font-black text-slate-800 mb-4 tracking-tighter">Motor PIDA</h2>
+                <p class="text-slate-500 mb-12 text-xl font-medium italic">IA para la Defensa Institucional.</p>
                 
-                <div class="bg-white p-16 rounded-[4rem] border border-slate-200 shadow-2xl text-left">
-                    <div class="mb-12">
-                        <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-8">
+                <div class="bg-white p-12 rounded-[3rem] border border-slate-200 shadow-2xl text-left">
+                    
+                    <div class="mb-10">
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">
                             Descripción del Obstáculo Institucional:
                         </label>
                         <textarea 
                             id="ai-input" 
-                            class="w-full h-72 p-12 bg-slate-50 border-0 rounded-[3rem] focus:ring-4 focus:ring-[#009EDB]/10 outline-none text-2xl leading-relaxed" 
-                            placeholder="Escriba aquí el desafío técnico o político..."
+                            class="w-full h-56 p-8 bg-slate-50 border-0 rounded-[2rem] focus:ring-4 focus:ring-[#009EDB]/10 outline-none text-xl leading-relaxed" 
+                            placeholder="Escriba aquí el desafío o barrera técnica..."
                         ></textarea>
                     </div>
                     
                     <button 
                         onclick="analyzeInstitutionalBarrier()" 
                         id="ai-btn" 
-                        class="w-full text-white py-8 rounded-[2.5rem] font-black text-2xl uppercase tracking-widest shadow-2xl transition-all active:scale-95 hover:opacity-90" 
+                        class="w-full text-white py-6 rounded-2xl font-black text-lg uppercase tracking-widest shadow-2xl transition-all active:scale-95 hover:opacity-95" 
                         style="background-color: var(--brand-color);"
                     >
-                        Ejecutar Análisis Estratégico
+                        Ejecutar Análisis PIDA
                     </button>
                     
                     <div 
                         id="ai-result" 
-                        class="mt-16 p-16 bg-white text-slate-700 rounded-[3.5rem] hidden border-l-[20px] border-[#009EDB] leading-relaxed shadow-2xl text-xl overflow-hidden animate-in fade-in slide-in-from-top-4 duration-500"
+                        class="mt-12 p-10 bg-white text-slate-700 rounded-[2.5rem] hidden border-l-[16px] border-[#009EDB] leading-relaxed shadow-xl text-lg overflow-hidden animate-in fade-in"
                     >
                         </div>
                 </div>
@@ -363,12 +395,12 @@
             id="admin" 
             class="tab-content"
         >
-            <h2 class="text-7xl font-black mb-5 tracking-tighter" style="color: var(--brand-color);">Validación</h2>
-            <p class="text-slate-500 mb-20 text-2xl">Revisión técnica de evidencias asistida por IA.</p>
+            <h2 class="text-5xl font-black mb-4 tracking-tighter" style="color: var(--brand-color);">Validación</h2>
+            <p class="text-slate-500 mb-16 text-xl font-semibold italic">Revisión de evidencias asistida por PIDA.</p>
             
             <div 
                 id="admin-pending-container" 
-                class="space-y-12"
+                class="space-y-10"
             >
                 </div>
         </div>
@@ -378,18 +410,18 @@
         id="upload-modal" 
         class="fixed inset-0 bg-slate-900/95 hidden flex items-center justify-center p-8 z-[120] backdrop-blur-3xl"
     >
-        <div class="bg-white p-16 rounded-[5rem] max-w-2xl w-full shadow-2xl text-left animate-in zoom-in duration-300">
+        <div class="bg-white p-14 rounded-[4rem] max-w-xl w-full shadow-2xl text-left animate-in zoom-in duration-300">
             
-            <div class="flex justify-between items-start mb-12">
+            <div class="flex justify-between items-start mb-10">
                 <div>
-                    <h3 class="text-5xl font-black text-slate-800 mb-3">Cargar Prueba</h3>
-                    <p class="text-slate-500 font-bold text-xl">Certificación de cumplimiento.</p>
+                    <h3 class="text-4xl font-black text-slate-800 mb-2">Cargar Prueba</h3>
+                    <p class="text-slate-500 font-bold text-lg">Certificación de cumplimiento.</p>
                 </div>
                 <button 
                     onclick="closeModal()" 
                     class="text-slate-200 hover:text-red-500 transition-colors"
                 >
-                    <i data-lucide="x-circle" class="w-12 h-12"></i>
+                    <i data-lucide="x-circle" class="w-10 h-10"></i>
                 </button>
             </div>
             
@@ -398,40 +430,40 @@
                 id="modal-rec-id"
             >
             
-            <div class="space-y-12">
+            <div class="space-y-10">
                 <div>
-                    <label class="block text-xs font-black uppercase text-slate-400 mb-6 tracking-widest">
+                    <label class="block text-[10px] font-black uppercase text-slate-400 mb-4 tracking-widest">
                         Resumen técnico del avance:
                     </label>
                     <textarea 
                         id="modal-desc" 
-                        class="w-full p-10 bg-slate-50 border rounded-[2.5rem] outline-none text-xl leading-relaxed" 
-                        rows="5"
+                        class="w-full p-8 bg-slate-50 border rounded-2xl outline-none text-lg font-bold leading-relaxed" 
+                        rows="4"
                     ></textarea>
                 </div>
                 
-                <div class="p-12 bg-slate-50 border-4 border-dashed rounded-[3rem] flex flex-col items-center">
+                <div class="p-10 bg-slate-50 border-4 border-dashed rounded-[2.5rem] flex flex-col items-center">
                     <input 
                         type="file" 
                         id="modal-file" 
-                        class="block w-full text-sm text-slate-500 file:mr-8 file:py-5 file:px-10 file:rounded-full file:border-0 file:text-xs file:font-black file:bg-[#009EDB] file:text-white cursor-pointer shadow-md"
+                        class="block w-full text-sm text-slate-500 file:mr-6 file:py-4 file:px-8 file:rounded-full file:border-0 file:text-[10px] file:font-black file:bg-[#009EDB] file:text-white cursor-pointer"
                     >
                 </div>
 
                 <button 
                     onclick="processEvidenceUpload()" 
                     id="btn-submit-ev" 
-                    class="w-full py-7 text-white rounded-[2.5rem] font-black uppercase text-sm tracking-widest shadow-2xl transition-all active:scale-95 hover:opacity-90" 
+                    class="w-full py-6 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-2xl transition-all active:scale-95 hover:opacity-90" 
                     style="background-color: var(--brand-color);"
                 >
-                    Registrar en Firestore
+                    Sincronizar con Firestore
                 </button>
             </div>
         </div>
     </div>
 
     <script>
-        // CONFIGURACIÓN FIREBASE
+        // CONFIGURACIÓN DE FIREBASE
         const firebaseConfig = { 
             apiKey: "AIzaSyD0n5oY7LGk7qaqMX_PjBvHfWnaxRa1nqg", 
             authDomain: "siis-stp.firebaseapp.com", 
@@ -442,32 +474,46 @@
         firebase.initializeApp(firebaseConfig); 
         lucide.createIcons();
 
-        // CONTROL DE SESIÓN
+        // CONTROL DE SESIÓN Y ESTADO ACTIVO
         firebase.auth().onAuthStateChanged(async (user) => {
+            
             if (user) { 
+                
                 document.getElementById('login-screen').classList.add('hidden'); 
                 document.getElementById('user-info-section').classList.remove('hidden'); 
                 document.getElementById('display-email').innerText = user.email; 
+                
                 await syncSystemData(user); 
+                
             } else { 
+                
                 document.getElementById('login-screen').classList.remove('hidden'); 
+                
             }
+            
         });
 
-        // SINCRONIZACIÓN DE DATOS
+        // SINCRONIZACIÓN DE DATOS CON EL SERVIDOR
         async function syncSystemData(user) {
+            
             const token = await user.getIdToken();
+            
             try {
+                
                 const resMe = await fetch('/api/auth/me', { 
                     headers: { 'Authorization': `Bearer ${token}` } 
                 });
                 
                 const profile = await resMe.json();
                 
+                // VALIDACIÓN DE ROL ADMINISTRADOR
                 if (profile.is_admin) { 
+                    
                     document.getElementById('admin-tab').classList.remove('hidden'); 
-                    document.getElementById('inst-tag').innerText = "ACCESO: ADMINISTRADOR IIRESODH"; 
+                    document.getElementById('inst-tag').innerText = "Acceso: Administrador IIRESODH"; 
+                    
                     loadPendingAdminQueue(); 
+                    
                 }
                 
                 const recRes = await fetch('/api/recommendations', { 
@@ -475,69 +521,92 @@
                 });
                 
                 const data = await recRes.json();
+                
                 renderDashboard(data);
                 
             } catch (err) { 
-                console.error("Error de sincronización:", err); 
+                
+                console.error("Falla de sincronización:", err); 
+                
             }
+            
         }
 
-        // RENDER DASHBOARD (ID PROTAGONISTA)
+        // RENDERIZADO DEL DASHBOARD (ID PROTAGONISTA)
         function renderDashboard(data) {
+            
             const list = document.getElementById('recommendations-list');
             
             list.innerHTML = data.map(item => `
-                <tr class="group hover:bg-slate-50 transition-all border-b border-slate-50">
-                    <td class="p-12 align-top">
-                        <div class="id-badge">
+                <tr class="table-row border-b border-slate-50 transition-all">
+                    
+                    <td class="p-10 align-top">
+                        <span class="id-main-title">
                             ${item.id || 'S/N'}
-                        </div>
-                        <div class="font-black text-slate-800 text-xl tracking-tight leading-tight mt-3">
+                        </span>
+                        <div class="inst-sub-title">
                             ${item.institution}
                         </div>
                     </td>
-                    <td class="p-12 align-top">
-                        <p class="text-slate-500 font-semibold text-lg leading-relaxed line-clamp-4 hover:line-clamp-none transition-all duration-300">
-                            ${item.description || 'Sin datos.'}
+                    
+                    <td class="p-10 align-top">
+                        <p class="text-slate-500 font-bold text-sm leading-relaxed line-clamp-4 hover:line-clamp-none transition-all">
+                            ${item.description || 'Sin descripción técnica registrada.'}
                         </p>
                     </td>
-                    <td class="p-12 text-center align-top pt-14">
-                        <div class="flex flex-col items-center space-y-5">
-                            <div class="w-full bg-slate-100 h-5 rounded-full overflow-hidden max-w-[160px] shadow-inner">
-                                <div class="h-full bg-[#009EDB] transition-all duration-1000" style="width:${item.progress}%;"></div>
+                    
+                    <td class="p-10 text-center align-top pt-12">
+                        <div class="flex flex-col items-center space-y-3">
+                            <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden max-w-[120px] shadow-inner">
+                                <div 
+                                    class="h-full bg-[#009EDB] transition-all duration-1000 shadow-lg" 
+                                    style="width:${item.progress}%;"
+                                ></div>
                             </div>
-                            <span class="text-2xl font-black text-slate-700">
+                            <span class="text-xl font-black text-slate-700">
                                 ${item.progress}%
                             </span>
                         </div>
                     </td>
-                    <td class="p-12 text-right align-top pt-14">
+                    
+                    <td class="p-10 text-right align-top pt-12">
                         <button 
                             onclick="openModal('${item.firestore_doc_id || item.id}')" 
-                            class="px-10 py-5 border border-[#009EDB]/20 text-[#009EDB] rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-[#009EDB] hover:text-white transition-all shadow-sm active:scale-95"
+                            class="px-8 py-4 border-2 border-[#009EDB]/20 text-[#009EDB] rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#009EDB] hover:text-white transition-all shadow-sm active:scale-95"
                         >
                             Gestionar
                         </button>
                     </td>
+                    
                 </tr>
             `).join(''); 
             
             lucide.createIcons();
+            
         }
 
-        // MOTOR PIDA
+        // LABORATORIO DE INCIDENCIA PIDA
         async function analyzeInstitutionalBarrier() {
-            const text = document.getElementById('ai-input').value; 
-            if (!text.trim()) return;
             
+            const text = document.getElementById('ai-input').value; 
+            
+            if (!text.trim()) {
+                return;
+            }
+            
+            const btn = document.getElementById('ai-btn');
             const resDiv = document.getElementById('ai-result'); 
+            
+            btn.disabled = true;
             resDiv.classList.remove('hidden'); 
-            resDiv.innerHTML = '<div class="flex items-center font-bold text-2xl text-slate-400 p-10"><i data-lucide="refresh-cw" class="animate-spin mr-6 w-10 h-10"></i> PIDA Analizando...</div>';
+            resDiv.innerHTML = '<div class="flex items-center font-bold text-2xl text-slate-400 p-8"><i data-lucide="refresh-cw" class="animate-spin mr-6 w-8 h-8"></i> PIDA Consultando Motor de Incidencia...</div>';
+            
             lucide.createIcons();
-
+            
             const token = await firebase.auth().currentUser.getIdToken();
             
             try {
+                
                 const res = await fetch('/api/ai/analyze', { 
                     method: 'POST', 
                     headers: { 
@@ -548,16 +617,27 @@
                 });
                 
                 const data = await res.json(); 
+                
                 resDiv.innerHTML = marked.parse(data.analysis);
                 
             } catch (e) { 
-                resDiv.innerHTML = "Fallo en motor IA."; 
+                
+                resDiv.innerHTML = "<div class='p-8 text-red-500 font-bold'>Error de comunicación con el motor IA.</div>"; 
+                
+            } finally {
+                
+                btn.disabled = false;
+                lucide.createIcons();
+                
             }
+            
         }
 
-        // PANEL DE VALIDACIÓN (SOLUCIÓN 403 Y LAYOUT)
+        // PANEL DE VALIDACIÓN (ID PROTAGONISTA Y SOLUCIÓN 403)
         async function loadPendingAdminQueue() {
+            
             const token = await firebase.auth().currentUser.getIdToken();
+            
             const res = await fetch('/api/admin/pending', { 
                 headers: { 'Authorization': `Bearer ${token}` } 
             });
@@ -566,46 +646,57 @@
             const container = document.getElementById('admin-pending-container');
             
             if (data.length > 0) {
+                
                 container.innerHTML = data.map(sub => `
-                    <div class="bg-white p-14 rounded-[4rem] shadow-2xl flex justify-between items-center border-l-[24px] border-l-[#009EDB]">
+                    <div class="bg-white p-12 rounded-[3.5rem] shadow-xl flex justify-between items-center border-l-[20px] border-l-[#009EDB]">
+                        
                         <div class="max-w-3xl text-left">
-                            <div class="id-badge">
+                            
+                            <span class="id-main-title text-2xl mb-4">
                                 ${sub.display_id || sub.recommendation_id}
-                            </div>
-                            <h4 class="text-4xl font-black text-slate-800 mb-6 leading-tight">
+                            </span>
+                            
+                            <h4 class="text-3xl font-black text-slate-800 mb-6 leading-tight">
                                 ${sub.description}
                             </h4>
-                            <p class="text-sm text-slate-400 font-bold mb-10 italic uppercase tracking-wider">
+                            
+                            <p class="text-xs text-slate-400 font-bold mb-10 italic uppercase tracking-widest">
                                 REMITENTE: ${sub.submitted_by}
                             </p>
+                            
                             <div class="flex space-x-6">
                                 <a 
                                     href="${sub.file_url}" 
                                     target="_blank" 
-                                    class="px-10 py-5 bg-slate-50 text-slate-600 rounded-3xl text-xs font-black border border-slate-200 hover:bg-slate-100 inline-flex items-center transition-all shadow-sm"
+                                    class="px-8 py-4 bg-slate-50 text-slate-600 rounded-2xl text-[10px] font-black border border-slate-200 hover:bg-slate-100 inline-flex items-center transition-all shadow-sm"
                                 >
-                                    <i data-lucide="external-link" class="w-5 h-5 mr-4 text-[#009EDB]"></i> Revisar Prueba Técnica
+                                    <i data-lucide="external-link" class="w-5 h-5 mr-3 text-[#009EDB]"></i> Revisar Prueba Técnica
                                 </a>
+                                
                                 <button 
                                     onclick="consultAISuggestion('${sub.id}', '${sub.recommendation_id}')" 
-                                    class="px-10 py-5 bg-[#009EDB]/10 text-[#009EDB] rounded-3xl text-xs font-black border border-[#009EDB]/20 flex items-center hover:bg-[#009EDB]/20 transition-all shadow-sm"
+                                    class="px-8 py-4 bg-[#009EDB]/10 text-[#009EDB] rounded-2xl text-[10px] font-black border border-[#009EDB]/20 flex items-center hover:bg-[#009EDB]/20 transition-all shadow-sm"
                                 >
-                                    <i data-lucide="brain" class="w-5 h-5 mr-4"></i> Propuesta PIDA
+                                    <i data-lucide="brain" class="w-5 h-5 mr-3"></i> Consultar Propuesta PIDA
                                 </button>
                             </div>
+                            
                             <div 
                                 id="suggestion-${sub.id}" 
-                                class="hidden mt-10 p-10 bg-blue-50 border-l-8 border-[#009EDB] rounded-[2rem] text-lg italic shadow-inner"
+                                class="hidden mt-10 p-8 bg-blue-50 border-l-8 border-[#009EDB] rounded-2xl text-lg italic shadow-inner"
                             ></div>
+                            
                         </div>
                         
-                        <div class="flex flex-col space-y-8 items-end pl-12 border-l border-slate-100 shrink-0">
-                            <div class="flex flex-col items-end">
-                                <span class="text-[11px] font-black text-slate-300 uppercase mb-4 tracking-widest">
-                                    CUMPLIMIENTO ACTUAL: ${sub.current_progress}%
+                        <div class="flex flex-col space-y-8 items-end pl-10 border-l border-slate-100 shrink-0">
+                            
+                            <div class="percentage-input-wrapper">
+                                
+                                <span class="text-[10px] font-black text-slate-300 uppercase mb-4 tracking-widest">
+                                    AVANCE ACTUAL: ${sub.current_progress}%
                                 </span>
                                 
-                                <label class="text-[11px] font-black text-slate-400 uppercase mb-4 tracking-widest">
+                                <label class="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-widest">
                                     NUEVO AVANCE GLOBAL (%)
                                 </label>
                                 
@@ -614,35 +705,55 @@
                                     id="progress-${sub.id}" 
                                     value="" 
                                     placeholder="0-100" 
-                                    class="input-percentage"
+                                    class="input-avance-final shadow-sm"
                                 >
+                                
                             </div>
                             
                             <button 
                                 onclick="approveSubmission('${sub.id}')" 
-                                class="px-14 py-7 text-white rounded-[2.5rem] font-black uppercase text-xs tracking-widest shadow-2xl active:scale-95 transition-all hover:opacity-90" 
+                                class="px-12 py-6 text-white rounded-[2rem] font-black uppercase text-[10px] tracking-widest shadow-2xl active:scale-95 transition-all hover:opacity-90" 
                                 style="background-color: var(--brand-color);"
                             >
-                                Validar y Actualizar
+                                Validar y Cerrar Logro
                             </button>
+                            
                         </div>
+                        
                     </div>
                 `).join(''); 
                 
                 lucide.createIcons();
+                
+            } else {
+                
+                container.innerHTML = `
+                    <div class="bg-white p-32 rounded-[5rem] border-4 border-dashed border-slate-100 text-center flex flex-col items-center">
+                        <i data-lucide="inbox" class="w-24 h-24 text-slate-100 mb-10"></i>
+                        <p class="text-slate-300 font-black uppercase tracking-widest text-lg">Sin evidencias pendientes</p>
+                    </div>
+                `;
+                
+                lucide.createIcons();
+                
             }
+            
         }
 
-        // SUGERENCIA PIDA
+        // PETICIÓN DE SUGERENCIA IA PIDA
         async function consultAISuggestion(subId, recId) {
+            
             const div = document.getElementById(`suggestion-${subId}`); 
+            
             div.classList.remove('hidden'); 
-            div.innerHTML = '<div class="flex items-center"><i data-lucide="refresh-cw" class="animate-spin mr-4 w-6 h-6"></i> Analizando brecha...</div>';
+            div.innerHTML = '<div class="flex items-center"><i data-lucide="refresh-cw" class="animate-spin mr-4 w-5 h-5"></i> PIDA analizando brecha técnica...</div>';
+            
             lucide.createIcons();
             
             const token = await firebase.auth().currentUser.getIdToken();
             
             try {
+                
                 const res = await fetch('/api/admin/suggest-progress', { 
                     method: 'POST', 
                     headers: { 
@@ -658,37 +769,46 @@
                 const data = await res.json();
                 
                 div.innerHTML = `
-                    <strong>Propuesta PIDA (${data.percentage}%):</strong> ${data.justification} 
-                    <br> 
+                    <div class="mb-4 font-bold text-slate-800">
+                        Análisis PIDA (${data.percentage}% sugerido):
+                    </div>
+                    <div class="text-slate-600 mb-6">
+                        ${data.justification}
+                    </div>
                     <button 
                         onclick="document.getElementById('progress-${subId}').value=${data.percentage}" 
-                        class="mt-6 text-[#009EDB] font-black underline uppercase text-xs tracking-widest"
+                        class="text-[#009EDB] font-black underline uppercase text-[10px] tracking-widest"
                     >
-                        Cargar valor sugerido
+                        Cargar valor sugerido automáticamente
                     </button>
                 `;
                 
             } catch (e) { 
-                div.innerHTML = "Fallo de conexión con PIDA."; 
+                
+                div.innerHTML = "<span class='text-red-500'>Fallo de conexión con PIDA.</span>"; 
+                
             }
+            
         }
 
-        // VALIDACIÓN FINAL
+        // PROCESO DE APROBACIÓN TÉCNICA
         async function approveSubmission(submissionId) {
+            
             const pVal = document.getElementById(`progress-${submissionId}`).value;
             
             if (!pVal) { 
-                alert("Asigne un porcentaje para continuar."); 
+                alert("Acción requerida: Debe asignar un porcentaje de avance antes de validar."); 
                 return; 
             }
             
-            if (!confirm(`¿Confirmar incremento de cumplimiento al ${pVal}%?`)) {
+            if (!confirm(`¿Confirma que este documento eleva el cumplimiento institucional al ${pVal}%?`)) {
                 return;
             }
             
             const token = await firebase.auth().currentUser.getIdToken();
             
             try {
+                
                 const res = await fetch('/api/admin/approve', { 
                     method: 'POST', 
                     headers: { 
@@ -702,30 +822,55 @@
                 });
                 
                 if (res.ok) { 
-                    alert("Firestore actualizado satisfactoriamente."); 
+                    
+                    alert("Cumplimiento actualizado satisfactoriamente en Firestore."); 
+                    
                     loadPendingAdminQueue(); 
+                    
+                    const recRes = await fetch('/api/recommendations', { 
+                        headers: { 'Authorization': `Bearer ${token}` } 
+                    });
+                    
+                    renderDashboard(await recRes.json());
+                    
+                } else {
+                    
+                    alert("Error al intentar actualizar la base de datos.");
+                    
                 }
                 
             } catch (e) { 
-                alert("Error técnico en la operación."); 
+                
+                alert("Error técnico de red durante la validación."); 
+                
             }
+            
         }
 
-        // CARGA PDF
+        // CARGA DE EVIDENCIA PDF A STORAGE
         async function processEvidenceUpload() {
+            
             const btn = document.getElementById('btn-submit-ev'); 
+            const fileInput = document.getElementById('modal-file');
+            
+            if (!fileInput.files[0]) {
+                alert("Debe seleccionar un archivo PDF.");
+                return;
+            }
+            
             btn.disabled = true; 
-            btn.innerText = "Registrando...";
+            btn.innerText = "Sincronizando con Storage...";
             
             const token = await firebase.auth().currentUser.getIdToken();
             const formData = new FormData();
             
             formData.append('recommendation_id', document.getElementById('modal-rec-id').value);
             formData.append('description', document.getElementById('modal-desc').value);
-            formData.append('file', document.getElementById('modal-file').files[0]);
+            formData.append('file', fileInput.files[0]);
             
             try {
-                await fetch('/api/evidence/upload', { 
+                
+                const res = await fetch('/api/evidence/upload', { 
                     method: 'POST', 
                     headers: { 
                         'Authorization': `Bearer ${token}` 
@@ -733,60 +878,99 @@
                     body: formData 
                 });
                 
-                alert("Evidencia subida al Bucket privado."); 
-                closeModal(); 
-                location.reload();
+                if (res.ok) {
+                    
+                    alert("Evidencia enviada para revisión técnica."); 
+                    closeModal(); 
+                    location.reload();
+                    
+                } else {
+                    
+                    alert("Falla al subir el documento.");
+                    btn.disabled = false;
+                    btn.innerText = "Sincronizar con Firestore";
+                    
+                }
                 
             } catch (e) { 
-                alert("Error de red."); 
+                
+                alert("Error de red durante la sincronización."); 
                 btn.disabled = false; 
+                
             }
+            
         }
 
-        // FUNCIONES UI
+        // UTILIDADES DE INTERFAZ
         function openModal(id) { 
+            
             document.getElementById('modal-rec-id').value = id; 
             document.getElementById('upload-modal').classList.remove('hidden'); 
+            
         }
 
         function closeModal() { 
+            
             document.getElementById('upload-modal').classList.add('hidden'); 
+            
         }
 
         function switchTab(tabId, el) { 
+            
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active')); 
             document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active')); 
+            
             document.getElementById(tabId).classList.add('active'); 
             el.classList.add('active'); 
+            
         }
 
         async function handleLogin() {
+            
             const email = document.getElementById('login-email').value; 
             const pass = document.getElementById('login-pass').value;
+            const btn = document.getElementById('btn-login');
+            
+            btn.innerText = "Verificando...";
+            btn.disabled = true;
             
             try { 
+                
                 await firebase.auth().signInWithEmailAndPassword(email, pass); 
+                
             } catch (e) { 
-                alert("Error de autenticación."); 
+                
+                alert("Acceso denegado: Revise sus credenciales institucionales."); 
+                btn.innerText = "Iniciar Sesión";
+                btn.disabled = false;
+                
             }
+            
         }
 
         function handleLogout() { 
+            
             firebase.auth().signOut(); 
             window.location.reload(); 
+            
         }
 
         async function downloadOfficialReport() {
+            
             const token = await firebase.auth().currentUser.getIdToken();
+            
             const res = await fetch('/api/report/generate', { 
                 headers: { 'Authorization': `Bearer ${token}` } 
             });
+            
             const blob = await res.blob(); 
             const url = window.URL.createObjectURL(blob);
+            
             const a = document.createElement('a'); 
             a.href = url; 
-            a.download = "Auditoria_MNPT.pdf"; 
+            a.download = "Auditoria_MNPT_Oficial.pdf"; 
             a.click();
+            
         }
     </script>
 </body>
