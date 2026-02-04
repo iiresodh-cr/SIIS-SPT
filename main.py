@@ -17,7 +17,7 @@ from google.auth import iam
 from fastapi import FastAPI, Depends, HTTPException, Request, UploadFile, File, Form, status, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse, JSONResponse
 from pydantic import BaseModel
 from google.cloud import firestore, storage
 import vertexai
@@ -194,10 +194,16 @@ async def download_proxy(path: str, token: str = Query(...)):
 
         bucket = storage_client.bucket(BUCKET_NAME)
         blob = bucket.blob(path)
+        
         if not blob.exists():
+             logger.error(f"Archivo no encontrado en bucket: {path}")
              raise HTTPException(status_code=404, detail="Archivo no encontrado")
 
-        file_stream = io.BytesIO(blob.download_as_bytes())
+        # Leemos el archivo en memoria y lo enviamos como stream
+        file_content = blob.download_as_bytes()
+        file_stream = io.BytesIO(file_content)
+        
+        # Intentamos adivinar el content type, o usamos octet-stream
         content_type = blob.content_type or "application/octet-stream"
         filename = path.split("/")[-1]
 
@@ -208,14 +214,13 @@ async def download_proxy(path: str, token: str = Query(...)):
         )
     except Exception as e:
         logger.error(f"Error Proxy: {str(e)}")
-        raise HTTPException(status_code=401, detail="Acceso denegado")
+        raise HTTPException(status_code=401, detail="Acceso denegado o error de archivo")
 
 @app.get("/api/admin/pending")
 async def list_pending(request: Request, user=Depends(get_current_user)):
     """
-    MODIFICADO: Uso de RUTA RELATIVA.
-    Al devolver la URL comenzando con "/", obligamos al navegador a usar el dominio actual
-    (tu aplicación) y NO irse a google.com.
+    MODIFICADO: Se fuerza Cache-Control en los headers para evitar que el navegador
+    use los enlaces antiguos (Google Storage) y use los nuevos (Proxy Relativo).
     """
     if not user["is_admin"]:
         raise HTTPException(status_code=403)
@@ -228,8 +233,8 @@ async def list_pending(request: Request, user=Depends(get_current_user)):
             file_path = data.get("file_path")
             
             if file_path:
-                # FIX CRÍTICO: Usamos ruta relativa.
-                # El frontend concatenará automáticamente el dominio actual + token.
+                # Construimos la URL relativa al Proxy.
+                # Usamos quote para manejar espacios y caracteres especiales en la ruta.
                 encoded_path = urllib.parse.quote(file_path)
                 data["file_url"] = f"/api/evidence/proxy?path={encoded_path}"
             
@@ -243,7 +248,15 @@ async def list_pending(request: Request, user=Depends(get_current_user)):
                 data["timestamp"] = data["timestamp"].isoformat()
             results.append(data)
             
-        return results
+        # FIX CRÍTICO: Devolvemos JSONResponse explícito con headers anti-caché.
+        return JSONResponse(
+            content=results,
+            headers={
+                "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+                "Pragma": "no-cache",
+                "Expires": "0"
+            }
+        )
     except Exception as e:
         logger.error(f"Error pendientes: {str(e)}")
         raise HTTPException(status_code=500, detail="Error de servidor")
