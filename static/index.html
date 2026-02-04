@@ -626,7 +626,7 @@
             
         }
 
-        // PANEL DE VALIDACIÓN (ID PROTAGONISTA Y SOLUCIÓN 403)
+        // PANEL DE VALIDACIÓN (ID PROTAGONISTA Y SOLUCIÓN PROXY 403)
         async function loadPendingAdminQueue() {
             
             const token = await firebase.auth().currentUser.getIdToken();
@@ -658,13 +658,13 @@
                             </p>
                             
                             <div class="flex space-x-6">
-                                <a 
-                                    href="${sub.file_url}" 
-                                    target="_blank" 
+                                <!-- BOTÓN MODIFICADO PARA USAR PROXY CON TOKEN -->
+                                <button 
+                                    onclick="openEvidenceWithToken('${sub.file_url}')" 
                                     class="px-8 py-4 bg-slate-50 text-slate-600 rounded-2xl text-[10px] font-black border border-slate-200 hover:bg-slate-100 inline-flex items-center transition-all shadow-sm"
                                 >
                                     <i data-lucide="external-link" class="w-5 h-5 mr-3 text-[#009EDB]"></i> Revisar Prueba Técnica
-                                </a>
+                                </button>
                                 
                                 <button 
                                     onclick="consultAISuggestion('${sub.id}', '${sub.recommendation_id}')" 
@@ -894,6 +894,13 @@
             
         }
 
+        // FUNCIÓN AUXILIAR PARA ABRIR ARCHIVO CON TOKEN (SOLUCIÓN PROXY)
+        async function openEvidenceWithToken(url) {
+            if (!url) return;
+            const token = await firebase.auth().currentUser.getIdToken();
+            window.open(`${url}&token=${token}`, '_blank');
+        }
+
         // UTILIDADES DE INTERFAZ
         function openModal(id) { 
             
@@ -949,22 +956,3 @@
         }
 
         async function downloadOfficialReport() {
-            
-            const token = await firebase.auth().currentUser.getIdToken();
-            
-            const res = await fetch('/api/report/generate', { 
-                headers: { 'Authorization': `Bearer ${token}` } 
-            });
-            
-            const blob = await res.blob(); 
-            const url = window.URL.createObjectURL(blob);
-            
-            const a = document.createElement('a'); 
-            a.href = url; 
-            a.download = "Auditoria_MNPT_Oficial.pdf"; 
-            a.click();
-            
-        }
-    </script>
-</body>
-</html>
