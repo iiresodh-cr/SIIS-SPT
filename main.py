@@ -1,6 +1,7 @@
 import os
 import io
 import logging
+import datetime
 from typing import Optional, List, Dict, Any
 from fastapi import FastAPI, Depends, HTTPException, Request, UploadFile, File, Form, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -25,7 +26,6 @@ logger = logging.getLogger("SIIS-SPT-SERVER")
 PROJECT_ID = os.getenv("GCP_PROJECT_ID", "siis-stp")
 APP_ID = "siis-spt-cr"
 BUCKET_NAME = os.getenv("STORAGE_BUCKET_NAME", f"{PROJECT_ID}.firebasestorage.app")
-# Modelo configurado por el usuario: gemini-2.5-flash
 MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "gemini-2.5-flash")
 LOCATION = "us-central1"
 
@@ -50,6 +50,9 @@ vertexai.init(project=PROJECT_ID, location=LOCATION)
 class BarrierInput(BaseModel):
     text: str
 
+class SubmissionAction(BaseModel):
+    submission_id: str
+
 # --- MIDDLEWARE DE SEGURIDAD ---
 async def get_current_user(request: Request) -> Dict[str, Any]:
     auth_header = request.headers.get("Authorization")
@@ -61,7 +64,6 @@ async def get_current_user(request: Request) -> Dict[str, Any]:
         decoded_token = auth.verify_id_token(token)
         email = decoded_token.get("email")
         
-        # Consulta dinámica a la colección 'users' establecida en Firestore
         user_ref = db.collection("artifacts").document(APP_ID).collection("users").document(email)
         user_doc = user_ref.get()
         
@@ -69,7 +71,6 @@ async def get_current_user(request: Request) -> Dict[str, Any]:
             raise HTTPException(status_code=403, detail="Usuario no registrado en Firestore")
             
         user_data = user_doc.to_dict()
-        # Unificamos la lógica: Admin si el rol es 'admin' o el slug es 'all'
         user_data["is_admin"] = user_data.get("role") == "admin" or user_data.get("inst_slug") == "all"
         return user_data
     except Exception as e:
@@ -80,7 +81,6 @@ async def get_current_user(request: Request) -> Dict[str, Any]:
 
 @app.get("/api/auth/me")
 async def auth_me(user=Depends(get_current_user)):
-    """Permite al frontend conocer el rol del usuario sin hardcodear emails."""
     return {
         "email": user.get("email"),
         "institution": user.get("institution"),
@@ -105,17 +105,11 @@ async def list_recommendations(user=Depends(get_current_user)):
 
 @app.post("/api/ai/analyze")
 async def analyze_barrier(data: BarrierInput, user=Depends(get_current_user)):
-    """
-    Mejora del Motor PIDA (Plataforma de Investigación y Defensa Avanzada).
-    Utiliza un prompt estructurado para generar análisis de alto nivel institucional.
-    """
     try:
         if not MODEL_NAME:
             raise ValueError("La variable GEMINI_MODEL_NAME no está configurada")
             
         model = GenerativeModel(MODEL_NAME)
-        
-        # Nuevo prompt estratégico para la marca PIDA
         prompt = f"""
         Actúa como la inteligencia central de PIDA (Plataforma de Investigación y Defensa Avanzada). 
         Tu objetivo es realizar una INVESTIGACIÓN profunda y diseñar una estrategia de DEFENSA INSTITUCIONAL 
@@ -130,15 +124,11 @@ async def analyze_barrier(data: BarrierInput, user=Depends(get_current_user)):
 
         Mantén un tono ejecutivo, sofisticado, analítico y altamente profesional.
         """
-        
         response = model.generate_content(prompt)
         return {"analysis": response.text}
     except Exception as e:
         logger.error(f"FALLO CRÍTICO IA ({MODEL_NAME}): {str(e)}")
-        raise HTTPException(
-            status_code=500, 
-            detail=f"Error en Vertex AI con el modelo {MODEL_NAME}."
-        )
+        raise HTTPException(status_code=500, detail=f"Error en Vertex AI.")
 
 @app.post("/api/evidence/upload")
 async def upload_evidence(
@@ -152,13 +142,16 @@ async def upload_evidence(
         blob = bucket.blob(f"evidence/{recommendation_id}/{file.filename}")
         blob.upload_from_file(file.file, content_type=file.content_type)
         
+        # Generar URL firmada válida por 7 días para evitar Access Denied
+        signed_url = blob.generate_signed_url(expiration=datetime.timedelta(minutes=10080))
+        
         sub_ref = db.collection("artifacts").document(APP_ID).collection("submissions").document()
         sub_ref.set({
             "id": sub_ref.id,
             "recommendation_id": recommendation_id,
             "submitted_by": user["email"],
             "description": description,
-            "file_url": blob.public_url,
+            "file_url": signed_url,
             "status": "PENDIENTE",
             "timestamp": firestore.SERVER_TIMESTAMP
         })
@@ -171,8 +164,34 @@ async def upload_evidence(
 async def list_pending(user=Depends(get_current_user)):
     if not user["is_admin"]:
         raise HTTPException(status_code=403, detail="Solo administradores")
-    subs = db.collection("artifacts").document(APP_ID).collection("submissions").where("status", "==", "PENDIENTE").stream()
-    return [s.to_dict() for s in subs]
+    try:
+        subs = db.collection("artifacts").document(APP_ID).collection("submissions").where("status", "==", "PENDIENTE").stream()
+        results = []
+        for s in subs:
+            data = s.to_dict()
+            # Conversión de timestamp para evitar error 500 de serialización JSON
+            if "timestamp" in data and data["timestamp"]:
+                data["timestamp"] = data["timestamp"].isoformat()
+            results.append(data)
+        return results
+    except Exception as e:
+        logger.error(f"Error listando pendientes: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
+
+@app.post("/api/admin/approve")
+async def approve_submission(action: SubmissionAction, user=Depends(get_current_user)):
+    if not user["is_admin"]:
+        raise HTTPException(status_code=403, detail="Solo administradores")
+    try:
+        sub_ref = db.collection("artifacts").document(APP_ID).collection("submissions").document(action.submission_id)
+        doc = sub_ref.get()
+        if not doc.exists:
+            raise HTTPException(status_code=404, detail="Evidencia no encontrada")
+        sub_ref.update({"status": "APROBADO"})
+        return {"message": "Evidencia validada con éxito"}
+    except Exception as e:
+        logger.error(f"Error aprobando: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error al validar")
 
 @app.get("/api/report/generate")
 async def generate_pdf(user=Depends(get_current_user)):
