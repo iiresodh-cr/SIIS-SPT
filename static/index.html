@@ -36,7 +36,7 @@
             padding: 0;
             overflow: hidden;
             height: 100vh;
-            font-size: 14px; /* Tamaño base reducido para legibilidad profesional */
+            font-size: 13px; /* MODIFICACIÓN: Tamaño base reducido para legibilidad profesional */
         }
 
         /* GESTIÓN DE PESTAÑAS */
@@ -110,7 +110,7 @@
 
         /* CONTENEDOR DE INPUT DE PORCENTAJE (CORRECCIÓN DE ANCHO) */
         .percentage-input-wrapper {
-            width: 200px !important; /* Asegura que el contenido no se corte */
+            width: 240px !important; /* MODIFICACIÓN: Asegura que el contenido no se corte */
             display: flex;
             flex-direction: column;
             align-items: flex-end;
@@ -290,6 +290,7 @@
 
         <div class="p-8 border-t border-white/20 bg-black/5 text-center">
             <div id="user-info-section" class="mb-6 hidden">
+                <p class="text-[9px] font-black text-white/50 uppercase tracking-[0.2em] mb-3 px-2">Usuario Activo</p>
                 <div 
                     id="display-email" 
                     class="text-[10px] font-bold text-white truncate bg-white/10 p-4 rounded-xl border border-white/20"
@@ -313,7 +314,7 @@
         >
             <div class="flex justify-between items-end mb-10">
                 <div>
-                    <h2 class="text-5xl font-black text-slate-800 tracking-tighter mb-2">Auditoría</h2>
+                    <h2 class="text-4xl font-black text-slate-800 tracking-tighter mb-2">Auditoría</h2>
                     <p class="text-slate-500 font-semibold text-lg italic">Estado institucional oficial.</p>
                 </div>
                 
@@ -668,7 +669,7 @@
                                 <a 
                                     href="${sub.file_url}" 
                                     target="_blank" 
-                                    class="px-8 py-4 bg-slate-50 text-slate-600 rounded-2xl text-[10px] font-black border border-slate-200 hover:bg-slate-100 inline-flex items-center transition-all shadow-sm"
+                                    class="px-8 py-4 bg-slate-50 text-slate-600 rounded-3xl text-[10px] font-black border border-slate-200 hover:bg-slate-100 inline-flex items-center transition-all shadow-sm"
                                 >
                                     <i data-lucide="external-link" class="w-5 h-5 mr-3 text-[#009EDB]"></i> Revisar Prueba Técnica
                                 </a>
