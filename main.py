@@ -87,6 +87,7 @@ async def get_current_user(request: Request) -> Dict[str, Any]:
 
 @app.get("/api/auth/me")
 async def auth_me(user=Depends(get_current_user)):
+    """Retorna el perfil del usuario autenticado."""
     return {
         "email": user.get("email"),
         "institution": user.get("institution"),
@@ -96,6 +97,7 @@ async def auth_me(user=Depends(get_current_user)):
 
 @app.get("/api/recommendations")
 async def list_recommendations(user=Depends(get_current_user)):
+    """Lista recomendaciones con el campo id interno como protagonista."""
     try:
         ref = db.collection("artifacts").document(APP_ID).collection("public").document("data").collection("recommendations")
         docs = ref.stream()
@@ -111,6 +113,7 @@ async def list_recommendations(user=Depends(get_current_user)):
 
 @app.post("/api/admin/suggest-progress")
 async def suggest_progress(data: SuggestionInput, user=Depends(get_current_user)):
+    """Motor PIDA: Sugiere el porcentaje de avance analizando la brecha técnica."""
     if not user["is_admin"]:
         raise HTTPException(status_code=403)
     
@@ -118,29 +121,28 @@ async def suggest_progress(data: SuggestionInput, user=Depends(get_current_user)
         rec_doc = db.collection("artifacts").document(APP_ID).collection("public").document("data").collection("recommendations").document(data.recommendation_id).get()
         sub_doc = db.collection("artifacts").document(APP_ID).collection("submissions").document(data.submission_id).get()
         
+        if not rec_doc.exists or not sub_doc.exists:
+            raise HTTPException(status_code=404)
+
         meta = rec_doc.to_dict().get("description", "")
         logro = sub_doc.to_dict().get("description", "")
 
         model = GenerativeModel(MODEL_NAME)
-        prompt = f"""
-        Actúa como auditor técnico del MNPT. Evalúa el cumplimiento.
-        RECOMENDACIÓN TÉCNICA: "{meta}"
-        EVIDENCIA PRESENTADA: "{logro}"
-        Propón un % de avance y justifica brevemente.
-        Responde exclusivamente en JSON: {{"percentage": valor, "justification": "texto"}}
-        """
+        prompt = f"Actúa como auditor del MNPT. Meta: '{meta}'. Logro: '{logro}'. Sugiere % (0-100) en JSON: {{'percentage': int, 'justification': str}}"
+        
         response = model.generate_content(prompt)
         match = re.search(r'\{.*\}', response.text, re.DOTALL)
         return json.loads(match.group())
     except Exception as e:
-        logger.error(f"Fallo IA PIDA: {str(e)}")
-        raise HTTPException(status_code=500, detail="Error de análisis")
+        logger.error(f"Fallo PIDA Sugerencia: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error en el motor IA")
 
 @app.post("/api/ai/analyze")
 async def analyze_barrier(data: BarrierInput, user=Depends(get_current_user)):
+    """Laboratorio PIDA: Análisis de incidencia estratégica."""
     try:
         model = GenerativeModel(MODEL_NAME)
-        prompt = f"Actúa como PIDA. Analiza barrera del MNPT y propón defensa: {data.text}"
+        prompt = f"PIDA (Defensa Avanzada MNPT). Analiza barrera: {data.text}. Genera: Diagnóstico, Estrategia e Incidencia."
         response = model.generate_content(prompt)
         return {"analysis": response.text}
     except Exception as e:
@@ -153,6 +155,7 @@ async def upload_evidence(
     file: UploadFile = File(...), 
     user=Depends(get_current_user)
 ):
+    """Carga física al Bucket y registro en Firestore."""
     try:
         bucket = storage_client.bucket(BUCKET_NAME)
         file_path = f"evidence/{recommendation_id}/{file.filename}"
@@ -169,14 +172,14 @@ async def upload_evidence(
             "status": "PENDIENTE",
             "timestamp": firestore.SERVER_TIMESTAMP
         })
-        return {"message": "Evidencia subida correctamente"}
+        return {"message": "Registro completado con éxito"}
     except Exception as e:
-        logger.error(f"Error carga: {str(e)}")
+        logger.error(f"Fallo en carga: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/admin/pending")
 async def list_pending(user=Depends(get_current_user)):
-    """Solución 403 definitiva: Firma URLs usando Google APIs."""
+    """Solución 403: Genera URLs firmadas dinámicas para acceso seguro."""
     if not user["is_admin"]:
         raise HTTPException(status_code=403)
     try:
@@ -190,30 +193,34 @@ async def list_pending(user=Depends(get_current_user)):
             
             if file_path:
                 blob = bucket.blob(file_path)
-                # Forzamos firma V4 para saltar el Forbidden 403
+                # Forzamos firma V4 con dominio oficial para evitar Forbidden
                 data["file_url"] = blob.generate_signed_url(
                     version="v4", 
                     expiration=datetime.timedelta(minutes=60), 
                     method="GET"
                 )
             
-            rec_doc = db.collection("artifacts").document(APP_ID).collection("public").document("data").collection("recommendations").document(data['recommendation_id']).get()
+            # Recuperamos el campo 'id' interno para protagonismo visual
+            rec_id = data.get("recommendation_id")
+            rec_doc = db.collection("artifacts").document(APP_ID).collection("public").document("data").collection("recommendations").document(rec_id).get()
+            
             if rec_doc.exists:
-                rec_data = rec_doc.to_dict()
-                # Protagonismo del campo id real
-                data["display_id"] = rec_data.get("id", "S/N")
-                data["current_progress"] = rec_data.get("progress", 0)
+                rec_info = rec_doc.to_dict()
+                data["display_id"] = rec_info.get("id", "S/N")
+                data["current_progress"] = rec_info.get("progress", 0)
             
             if "timestamp" in data and data["timestamp"]:
                 data["timestamp"] = data["timestamp"].isoformat()
             results.append(data)
+            
         return results
     except Exception as e:
-        logger.error(f"Error listado: {str(e)}")
-        raise HTTPException(status_code=500, detail="Fallo servidor")
+        logger.error(f"Error listando pendientes: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error de servidor")
 
 @app.post("/api/admin/approve")
 async def approve_submission(action: SubmissionAction, user=Depends(get_current_user)):
+    """Valida la sumisión y actualiza el cumplimiento maestro."""
     if not user["is_admin"]:
         raise HTTPException(status_code=403)
     try:
@@ -223,22 +230,24 @@ async def approve_submission(action: SubmissionAction, user=Depends(get_current_
         
         sub_ref.update({"status": "APROBADO"})
         rec_ref = db.collection("artifacts").document(APP_ID).collection("public").document("data").collection("recommendations").document(rec_id)
+        
         rec_ref.update({
             "progress": action.progress,
             "status": "Completado" if action.progress >= 100 else "En Progreso",
             "last_validated": firestore.SERVER_TIMESTAMP
         })
-        return {"message": "Actualizado"}
+        return {"message": "Validación exitosa"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/report/generate")
 async def generate_pdf(user=Depends(get_current_user)):
+    """Reporte PDF de auditoría."""
     recs = db.collection("artifacts").document(APP_ID).collection("public").document("data").collection("recommendations").stream()
     buffer = io.BytesIO()
     p = canvas.Canvas(buffer, pagesize=letter)
     p.setFont("Helvetica-Bold", 14)
-    p.drawString(100, 750, "INFORME DE AUDITORÍA SIIS-SPT")
+    p.drawString(100, 750, "INFORME TÉCNICO DE CUMPLIMIENTO SPT")
     y = 700
     for doc in recs:
         d = doc.to_dict()
