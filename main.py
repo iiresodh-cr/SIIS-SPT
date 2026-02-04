@@ -213,10 +213,9 @@ async def download_proxy(path: str, token: str = Query(...)):
 @app.get("/api/admin/pending")
 async def list_pending(request: Request, user=Depends(get_current_user)):
     """
-    MODIFICADO: Estrategia Proxy Segura.
-    En lugar de intentar generar Signed URLs (que fallan por permisos IAM),
-    generamos una URL que apunta a nuestro propio endpoint /api/evidence/proxy.
-    Esto usa las credenciales del servidor y es 100% fiable.
+    MODIFICADO: Uso de RUTA RELATIVA.
+    Al devolver la URL comenzando con "/", obligamos al navegador a usar el dominio actual
+    (tu aplicación) y NO irse a google.com.
     """
     if not user["is_admin"]:
         raise HTTPException(status_code=403)
@@ -224,19 +223,15 @@ async def list_pending(request: Request, user=Depends(get_current_user)):
         subs_stream = db.collection("artifacts").document(APP_ID).collection("submissions").where("status", "==", "PENDIENTE").stream()
         results = []
         
-        # Obtenemos la URL base del servidor (ej: https://mi-app.run.app)
-        base_url = str(request.base_url).rstrip("/")
-        
         for s in subs_stream:
             data = s.to_dict()
             file_path = data.get("file_path")
             
             if file_path:
-                # Construimos la URL al proxy.
-                # El frontend añadirá "&token=..." al final, lo cual es válido
-                # porque aquí ya iniciamos los query params con "?path=..."
+                # FIX CRÍTICO: Usamos ruta relativa.
+                # El frontend concatenará automáticamente el dominio actual + token.
                 encoded_path = urllib.parse.quote(file_path)
-                data["file_url"] = f"{base_url}/api/evidence/proxy?path={encoded_path}"
+                data["file_url"] = f"/api/evidence/proxy?path={encoded_path}"
             
             rec_doc = db.collection("artifacts").document(APP_ID).collection("public").document("data").collection("recommendations").document(data['recommendation_id']).get()
             if rec_doc.exists:
