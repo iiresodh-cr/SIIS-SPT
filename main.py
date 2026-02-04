@@ -5,6 +5,7 @@ import datetime
 import json
 import re
 import google.auth
+import google.auth.transport.requests  # <--- IMPORTANTE: Necesario para refrescar credenciales
 from typing import Optional, List, Dict, Any
 from fastapi import FastAPI, Depends, HTTPException, Request, UploadFile, File, Form, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -44,6 +45,7 @@ app.add_middleware(
 if not firebase_admin._apps:
     firebase_admin.initialize_app()
 
+# Inicialización básica (se refinará en los endpoints que necesiten firma)
 db = firestore.Client(project=PROJECT_ID)
 storage_client = storage.Client(project=PROJECT_ID)
 vertexai.init(project=PROJECT_ID, location=LOCATION)
@@ -100,7 +102,6 @@ async def list_recommendations(user=Depends(get_current_user)):
     try:
         ref = db.collection("artifacts").document(APP_ID).collection("public").document("data").collection("recommendations")
         docs = ref.stream()
-        # Capturamos Firestore ID y el campo 'id' interno para protagonismo
         all_recs = [{"firestore_doc_id": doc.id, **doc.to_dict()} for doc in docs]
         
         if user["is_admin"]:
@@ -171,13 +172,20 @@ async def upload_evidence(
 
 @app.get("/api/admin/pending")
 async def list_pending(user=Depends(get_current_user)):
-    """Solución 403: Firma URLs con dominio storage.googleapis.com."""
+    """Solución 403 y Redirección: Usa credenciales explícitas y fuerza dominio API."""
     if not user["is_admin"]:
         raise HTTPException(status_code=403)
     try:
-        creds, _ = google.auth.default()
+        # 1. Obtener y refrescar credenciales explícitamente para asegurar que tenemos el email
+        creds, project_id = google.auth.default()
+        auth_req = google.auth.transport.requests.Request()
+        creds.refresh(auth_req) # <--- CRÍTICO: Esto llena el service_account_email
+        
+        # 2. Re-inicializar cliente con estas credenciales frescas
+        authorized_storage_client = storage.Client(credentials=creds, project=project_id)
+        bucket = authorized_storage_client.bucket(BUCKET_NAME)
+        
         subs_stream = db.collection("artifacts").document(APP_ID).collection("submissions").where("status", "==", "PENDIENTE").stream()
-        bucket = storage_client.bucket(BUCKET_NAME)
         results = []
         
         for s in subs_stream:
@@ -186,17 +194,22 @@ async def list_pending(user=Depends(get_current_user)):
             
             if file_path:
                 blob = bucket.blob(file_path)
-                # Generación V4 con dominio oficial para evitar Forbidden
+                
+                # 3. Generar URL firmada usando el email confirmado
                 signed_url = blob.generate_signed_url(
                     version="v4", 
                     expiration=datetime.timedelta(minutes=60), 
                     method="GET",
                     service_account_email=creds.service_account_email
                 )
-                # FIX: Reemplazar el dominio de consola (que pide login) por el dominio de API (que acepta la firma)
-                data["file_url"] = signed_url.replace("storage.cloud.google.com", "storage.googleapis.com")
+                
+                # 4. FIX FINAL: Forzar el dominio storage.googleapis.com
+                # Si la URL viene como storage.cloud.google.com, causa el redirect al login.
+                if "storage.cloud.google.com" in signed_url:
+                    data["file_url"] = signed_url.replace("storage.cloud.google.com", "storage.googleapis.com")
+                else:
+                    data["file_url"] = signed_url
             
-            # Recuperamos campo 'id' interno para protagonismo visual
             rec_doc = db.collection("artifacts").document(APP_ID).collection("public").document("data").collection("recommendations").document(data['recommendation_id']).get()
             if rec_doc.exists:
                 rec_info = rec_doc.to_dict()
