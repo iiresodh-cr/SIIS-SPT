@@ -36,7 +36,6 @@
             to { opacity: 1; transform: translateY(0); } 
         }
 
-        /* Estilos de la barra lateral */
         .sidebar-item {
             color: rgba(255, 255, 255, 0.7);
             transition: all 0.3s ease;
@@ -53,30 +52,12 @@
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
 
-        /* Formato para el informe PIDA con Markdown */
-        #ai-result h1, #ai-result h2, #ai-result h3 { 
-            font-weight: 800; 
-            color: #1e293b; 
-            margin-top: 1.5rem; 
-            margin-bottom: 0.75rem; 
-        }
-        #ai-result h3 { 
-            font-size: 1.5rem; 
-            border-bottom: 2px solid #e2e8f0; 
-            padding-bottom: 0.5rem; 
-        }
-        #ai-result p { 
-            margin-bottom: 1rem; 
-        }
-        #ai-result ul { 
-            list-style-type: disc; 
-            padding-left: 1.5rem; 
-            margin-bottom: 1rem; 
-        }
-        #ai-result strong { 
-            color: var(--brand-color); 
-            font-weight: 700; 
-        }
+        /* Formateo de Informes Generados por PIDA */
+        #ai-result h1, #ai-result h2, #ai-result h3 { font-weight: 800; color: #1e293b; margin-top: 1.5rem; margin-bottom: 0.75rem; }
+        #ai-result h3 { font-size: 1.5rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.5rem; }
+        #ai-result p { margin-bottom: 1rem; }
+        #ai-result ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; }
+        #ai-result strong { color: var(--brand-color); font-weight: 700; }
 
         .glass-effect {
             background: rgba(255, 255, 255, 0.7);
@@ -159,7 +140,7 @@
             <div class="flex justify-between items-end mb-12">
                 <div>
                     <h2 class="text-6xl font-black text-slate-800 tracking-tighter mb-3">Auditoría</h2>
-                    <p class="text-slate-500 font-semibold text-xl">Estado de cumplimiento institucional.</p>
+                    <p class="text-slate-500 font-semibold text-xl">Estado de cumplimiento y detalle de recomendaciones.</p>
                 </div>
                 <div id="inst-tag" class="bg-white px-8 py-4 rounded-3xl border border-slate-200 shadow-sm text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 italic">
                     Sincronizando...
@@ -183,43 +164,43 @@
         </div>
 
         <div id="laboratorio" class="tab-content">
-            <div class="max-w-5xl mx-auto">
-                <h2 class="text-6xl font-black text-slate-800 mb-4 tracking-tighter text-center">Motor PIDA</h2>
-                <p class="text-slate-500 mb-12 text-xl font-medium text-center italic">Plataforma de Investigación y Defensa Avanzada.</p>
+            <div class="max-w-5xl mx-auto text-center">
+                <h2 class="text-6xl font-black text-slate-800 mb-4 tracking-tighter">Motor PIDA</h2>
+                <p class="text-slate-500 mb-12 text-xl font-medium italic">Plataforma de Investigación y Defensa Avanzada.</p>
                 
                 <div class="bg-white p-14 rounded-[3.5rem] border border-slate-200 shadow-2xl text-left">
                     <div class="mb-10">
                         <label class="block text-xs font-black text-slate-400 uppercase tracking-[0.3em] mb-6">Descripción del Obstáculo:</label>
-                        <textarea id="ai-input" class="w-full h-64 p-10 bg-slate-50 border-0 rounded-[2.5rem] focus:ring-4 focus:ring-[#009EDB]/10 outline-none transition-all text-2xl leading-relaxed" placeholder="Ej: No existe voluntad política para reformar el reglamento..."></textarea>
+                        <textarea id="ai-input" class="w-full h-64 p-10 bg-slate-50 border-0 rounded-[2.5rem] focus:ring-4 focus:ring-[#009EDB]/10 outline-none transition-all text-2xl leading-relaxed" placeholder="Ej: No existe voluntad política para reformar..."></textarea>
                     </div>
                     
                     <button onclick="analyzeInstitutionalBarrier()" id="ai-btn" class="w-full text-white py-7 rounded-[2rem] font-black text-xl uppercase tracking-widest shadow-2xl transition-all active:scale-95 flex items-center justify-center hover:opacity-90" style="background-color: var(--brand-color);">Ejecutar Análisis PIDA</button>
                     
-                    <div id="ai-result" class="mt-14 p-14 bg-white text-slate-700 rounded-[3rem] hidden border-l-[16px] border-[#009EDB] shadow-2xl text-xl overflow-hidden animate-in fade-in slide-in-from-top-4 duration-500">
-                        </div>
+                    <div id="ai-result" class="mt-14 p-14 bg-white text-slate-700 rounded-[3rem] hidden border-l-[16px] border-[#009EDB] leading-relaxed shadow-2xl text-xl overflow-hidden animate-in fade-in slide-in-from-top-4 duration-500">
+                    </div>
                 </div>
             </div>
         </div>
 
         <div id="admin" class="tab-content">
             <h2 class="text-6xl font-black mb-4 tracking-tighter" style="color: var(--brand-color);">Validación Técnica</h2>
-            <p class="text-slate-500 mb-16 text-xl">Revisión y ajuste de porcentajes de cumplimiento.</p>
+            <p class="text-slate-500 mb-16 text-xl">Gestión de evidencias asistida por el Motor PIDA.</p>
             
             <div id="admin-pending-container" class="space-y-8">
                 <div class="bg-white p-24 rounded-[4rem] border-4 border-dashed border-slate-100 text-center flex flex-col items-center">
                     <i data-lucide="inbox" class="w-24 h-24 text-slate-100 mb-8"></i>
-                    <p class="text-slate-300 font-black uppercase tracking-[0.3em] text-sm">No hay evidencias pendientes de revisión técnica</p>
+                    <p class="text-slate-300 font-black uppercase tracking-[0.3em] text-sm">Sin evidencias pendientes de revisión</p>
                 </div>
             </div>
         </div>
     </main>
 
     <div id="upload-modal" class="fixed inset-0 bg-slate-900/95 hidden flex items-center justify-center p-6 z-[120] backdrop-blur-2xl">
-        <div class="bg-white p-14 rounded-[4rem] max-w-xl w-full shadow-2xl animate-in zoom-in duration-300">
+        <div class="bg-white p-14 rounded-[4rem] max-w-xl w-full shadow-2xl animate-in zoom-in duration-300 text-left">
             <div class="flex justify-between items-start mb-10">
                 <div>
                     <h3 class="text-4xl font-black tracking-tight mb-2 text-slate-800">Cargar Prueba</h3>
-                    <p class="text-slate-500 font-bold text-lg">Acreditación de cumplimiento técnico.</p>
+                    <p class="text-slate-500 font-bold text-lg">Acreditación de cumplimiento.</p>
                 </div>
                 <button onclick="closeModal()" class="text-slate-200 hover:text-red-500 transition-colors"><i data-lucide="x-circle" class="w-10 h-10"></i></button>
             </div>
@@ -229,21 +210,21 @@
             <div class="space-y-10">
                 <div>
                     <label class="block text-[10px] font-black uppercase text-slate-400 mb-4 tracking-widest">Resumen del logro:</label>
-                    <textarea id="modal-desc" class="w-full p-8 bg-slate-50 border border-slate-100 rounded-[2rem] outline-none focus:ring-4 focus:ring-[#009EDB]/10 text-lg leading-relaxed" rows="4" placeholder="Describa cómo esta acción cumple con la recomendación..."></textarea>
+                    <textarea id="modal-desc" class="w-full p-8 bg-slate-50 border border-slate-100 rounded-[2rem] outline-none focus:ring-4 focus:ring-[#009EDB]/10 text-lg leading-relaxed" rows="4"></textarea>
                 </div>
                 
                 <div class="p-8 bg-slate-50 border-4 border-dashed border-slate-200 rounded-[2.5rem] flex flex-col items-center">
-                    <label class="block text-[10px] font-black uppercase text-slate-400 mb-6 tracking-widest">Documento Probatorio (PDF):</label>
-                    <input type="file" id="modal-file" class="block w-full text-sm text-slate-500 file:mr-6 file:py-4 file:px-8 file:rounded-full file:border-0 file:text-[11px] file:font-black file:bg-[#009EDB] file:text-white hover:file:bg-[#0086ba] cursor-pointer">
+                    <label class="block text-[10px] font-black uppercase text-slate-400 mb-6 tracking-widest">Archivo PDF:</label>
+                    <input type="file" id="modal-file" class="block w-full text-sm text-slate-500 file:mr-6 file:py-4 file:px-8 file:rounded-full file:border-0 file:text-[11px] file:font-bold file:bg-[#009EDB] file:text-white hover:file:bg-[#0086ba] cursor-pointer">
                 </div>
 
-                <button onclick="processEvidenceUpload()" id="btn-submit-ev" class="w-full py-6 text-white rounded-[2rem] font-black text-sm uppercase tracking-[0.2em] shadow-2xl transition-all active:scale-95 hover:opacity-90" style="background-color: var(--brand-color);">Sincronizar con Storage</button>
+                <button onclick="processEvidenceUpload()" id="btn-submit-ev" class="w-full py-6 text-white rounded-[2rem] font-black text-sm uppercase tracking-[0.2em] shadow-2xl transition-all active:scale-95 hover:opacity-90" style="background-color: var(--brand-color);">Sincronizar con PIDA</button>
             </div>
         </div>
     </div>
 
     <script>
-        // Configuración Firebase
+        // Inicialización
         const firebaseConfig = {
             apiKey: "AIzaSyD0n5oY7LGk7qaqMX_PjBvHfWnaxRa1nqg",
             authDomain: "siis-stp.firebaseapp.com",
@@ -253,7 +234,7 @@
         firebase.initializeApp(firebaseConfig);
         lucide.createIcons();
 
-        // Monitoreo de sesión
+        // Autenticación
         firebase.auth().onAuthStateChanged(async (user) => {
             if (user) {
                 document.getElementById('login-screen').classList.add('hidden');
@@ -271,9 +252,7 @@
                 const resMe = await fetch('/api/auth/me', { headers: { 'Authorization': `Bearer ${token}` } });
                 const profile = await resMe.json();
                 
-                const isAdmin = profile.is_admin || 
-                                user.email === "durquilla@iiresodh.org" || 
-                                user.email === "prueba@iiresodh.org";
+                const isAdmin = profile.is_admin || user.email === "durquilla@iiresodh.org" || user.email === "prueba@iiresodh.org";
 
                 if (isAdmin) {
                     document.getElementById('admin-tab').classList.remove('hidden');
@@ -282,7 +261,7 @@
                     tag.classList.add('text-[#009EDB]', 'border-[#009EDB]/20');
                     loadPendingAdminQueue();
                 } else {
-                    document.getElementById('inst-tag').innerText = "Acceso: Punto Focal Institucional";
+                    document.getElementById('inst-tag').innerText = "Acceso: Punto Focal";
                 }
 
                 const recRes = await fetch('/api/recommendations', { headers: { 'Authorization': `Bearer ${token}` } });
@@ -293,28 +272,28 @@
             }
         }
 
-        // Renderizado del Dashboard (ID prominente y descripción de Firestore)
+        // Dashboard: ID Protagonista y Descripción de Firestore
         function renderDashboard(data) {
             const list = document.getElementById('recommendations-list');
             list.innerHTML = data.map(item => `
-                <tr class="group hover:bg-slate-50/50 transition-all border-b border-slate-50">
+                <tr class="group hover:bg-slate-50 transition-all border-b border-slate-50">
                     <td class="p-10 align-top">
                         <div class="text-[14px] font-black text-[#009EDB] font-mono tracking-tight uppercase mb-3 bg-[#009EDB]/5 px-4 py-2 rounded-lg inline-block border border-[#009EDB]/10">
                             ${item.id || 'CAT-XX'}
                         </div>
-                        <div class="font-black text-slate-800 text-lg tracking-tight mt-2 italic">
+                        <div class="font-black text-slate-800 text-lg mt-2 italic">
                             ${item.institution}
                         </div>
                     </td>
                     <td class="p-10 align-top">
                         <p class="text-slate-500 font-semibold text-base leading-relaxed line-clamp-4 hover:line-clamp-none transition-all duration-300">
-                            ${item.description || 'Sin descripción técnica disponible.'}
+                            ${item.description || 'Sin descripción en Firestore.'}
                         </p>
                     </td>
                     <td class="p-10 text-center align-top pt-12">
                         <div class="flex flex-col items-center space-y-4">
                             <div class="w-full bg-slate-100 h-4 rounded-full overflow-hidden border border-slate-200 max-w-[140px]">
-                                <div class="h-full transition-all duration-1000 shadow-lg" style="width:${item.progress}%; background-color: #009EDB;"></div>
+                                <div class="h-full transition-all duration-1000" style="width:${item.progress}%; background-color: #009EDB;"></div>
                             </div>
                             <span class="text-xl font-black text-slate-700">${item.progress}%</span>
                         </div>
@@ -329,7 +308,6 @@
             lucide.createIcons();
         }
 
-        // Laboratorio IA con Markdown
         async function analyzeInstitutionalBarrier() {
             const text = document.getElementById('ai-input').value;
             const btn = document.getElementById('ai-btn');
@@ -338,7 +316,7 @@
             
             btn.disabled = true; 
             resDiv.classList.remove('hidden'); 
-            resDiv.innerHTML = '<div class="flex items-center font-bold text-2xl text-slate-400 p-8"><i data-lucide="refresh-cw" class="animate-spin mr-5 w-8 h-8"></i> Consultando Motor PIDA...</div>';
+            resDiv.innerHTML = '<div class="flex items-center font-bold text-2xl text-slate-400 p-8"><i data-lucide="refresh-cw" class="animate-spin mr-5 w-8 h-8"></i> PIDA Analizando...</div>';
             lucide.createIcons();
 
             const token = await firebase.auth().currentUser.getIdToken();
@@ -351,14 +329,14 @@
                 const data = await res.json();
                 resDiv.innerHTML = marked.parse(data.analysis);
             } catch (e) {
-                resDiv.innerHTML = "<div class='p-8 text-red-500 font-bold'>Error crítico en PIDA.</div>";
+                resDiv.innerHTML = "Error en el motor de incidencia.";
             } finally {
                 btn.disabled = false;
                 lucide.createIcons();
             }
         }
 
-        // Panel Admin: Consulta y Validación Asistida
+        // Panel Admin: Sugerencia de Avance por IA
         async function loadPendingAdminQueue() {
             const token = await firebase.auth().currentUser.getIdToken();
             const res = await fetch('/api/admin/pending', { headers: { 'Authorization': `Bearer ${token}` } });
@@ -373,8 +351,8 @@
                             <h4 class="text-2xl font-black text-slate-800 mb-4">${sub.description}</h4>
                             <p class="text-sm text-slate-400 font-bold mb-6 italic">Remitente: ${sub.submitted_by}</p>
                             <div class="flex space-x-4">
-                                <a href="${sub.file_url}" target="_blank" class="px-6 py-4 bg-slate-50 text-slate-600 rounded-2xl text-[11px] font-black border hover:bg-slate-100 inline-flex items-center">
-                                    <i data-lucide="external-link" class="w-4 h-4 mr-3"></i> Revisar Prueba Técnica
+                                <a href="${sub.file_url}" target="_blank" class="px-6 py-4 bg-slate-50 text-slate-600 rounded-2xl text-[11px] font-black border hover:bg-slate-100 inline-flex items-center transition-all">
+                                    <i data-lucide="external-link" class="w-4 h-4 mr-3"></i> Revisar Prueba
                                 </a>
                                 <button onclick="consultAISuggestion('${sub.id}', '${sub.recommendation_id}')" class="px-6 py-4 bg-[#009EDB]/10 text-[#009EDB] rounded-2xl text-[11px] font-black border border-[#009EDB]/20 flex items-center hover:bg-[#009EDB]/20 transition-all">
                                     <i data-lucide="brain" class="w-4 h-4 mr-3"></i> Consultar Propuesta PIDA
@@ -384,10 +362,10 @@
                         </div>
                         <div class="flex flex-col space-y-6 items-end">
                             <div class="flex flex-col items-end">
-                                <label class="text-[10px] font-black text-slate-400 uppercase mb-2 text-right">Asignar Avance Global (%)</label>
-                                <input type="number" id="progress-${sub.id}" value="100" min="0" max="100" class="w-24 p-4 border border-slate-200 rounded-xl text-center font-black text-xl text-[#009EDB]">
+                                <label class="text-[10px] font-black text-slate-400 uppercase mb-2">Nuevo Avance (%)</label>
+                                <input type="number" id="progress-${sub.id}" value="100" min="0" max="100" class="w-24 p-4 border rounded-xl text-center font-black text-xl text-[#009EDB]">
                             </div>
-                            <button onclick="approveSubmission('${sub.id}')" class="px-10 py-5 text-white rounded-[1.5rem] text-[11px] font-black uppercase shadow-xl hover:opacity-90 active:scale-95 transition-all" style="background-color: var(--brand-color);">Validar Avance</button>
+                            <button onclick="approveSubmission('${sub.id}')" class="px-10 py-5 text-white rounded-[1.5rem] text-[11px] font-black uppercase shadow-xl hover:opacity-90 active:scale-95 transition-all" style="background-color: #009EDB;">Validar Avance</button>
                         </div>
                     </div>
                 `).join('');
@@ -398,8 +376,7 @@
         async function consultAISuggestion(subId, recId) {
             const div = document.getElementById(`suggestion-${subId}`);
             div.classList.remove('hidden');
-            div.innerHTML = '<div class="flex items-center"><i data-lucide="refresh-cw" class="animate-spin mr-3 w-4 h-4"></i> PIDA analizando brecha...</div>';
-            lucide.createIcons();
+            div.innerHTML = 'PIDA analizando...';
             const token = await firebase.auth().currentUser.getIdToken();
             try {
                 const res = await fetch('/api/admin/suggest-progress', {
@@ -408,11 +385,9 @@
                     body: JSON.stringify({ submission_id: subId, recommendation_id: recId })
                 });
                 const data = await res.json();
-                div.innerHTML = `<strong>Propuesta PIDA (${data.percentage}%):</strong> ${data.justification} <br>
-                <button onclick="document.getElementById('progress-${subId}').value=${data.percentage}" class="mt-3 text-[#009EDB] font-black underline uppercase text-[10px]">Cargar este valor</button>`;
-            } catch (e) {
-                div.innerHTML = "Error al conectar con la IA.";
-            }
+                div.innerHTML = `<strong>Sugerencia (${data.percentage}%):</strong> ${data.justification} <br>
+                <button onclick="document.getElementById('progress-${subId}').value=${data.percentage}" class="mt-3 text-[#009EDB] font-black underline uppercase text-[10px]">Aplicar este valor</button>`;
+            } catch (e) { div.innerHTML = "Error de conexión."; }
         }
 
         async function approveSubmission(submissionId) {
@@ -425,11 +400,8 @@
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({ submission_id: submissionId, progress: parseInt(pVal) })
                 });
-                if (res.ok) { 
-                    alert("Validación completada."); 
-                    loadPendingAdminQueue(); 
-                }
-            } catch (e) { alert("Falla técnica."); }
+                if (res.ok) { alert("Validado."); loadPendingAdminQueue(); }
+            } catch (e) { alert("Error."); }
         }
 
         async function processEvidenceUpload() {
@@ -437,7 +409,7 @@
             const fileInput = document.getElementById('modal-file');
             const recommendationId = document.getElementById('modal-rec-id').value;
             const description = document.getElementById('modal-desc').value;
-            if (!fileInput.files[0] || !recommendationId) { alert("Complete los datos."); return; }
+            if (!fileInput.files[0] || !recommendationId) { alert("Faltan datos."); return; }
             
             btn.disabled = true; btn.innerText = "Subiendo...";
             const token = await firebase.auth().currentUser.getIdToken();
@@ -452,14 +424,12 @@
                     headers: { 'Authorization': `Bearer ${token}` },
                     body: formData
                 });
-                alert("Evidencia en proceso de validación.");
+                alert("Evidencia subida.");
                 closeModal();
-            } catch (e) { alert("Error de red."); } finally { 
-                btn.disabled = false; btn.innerText = "Sincronizar Evidencia"; 
-            }
+            } catch (e) { alert("Error."); } finally { btn.disabled = false; btn.innerText = "Sincronizar"; }
         }
 
-        // Funciones de UI
+        // Navegación
         function openModal(id) { document.getElementById('modal-rec-id').value = id; document.getElementById('upload-modal').classList.remove('hidden'); }
         function closeModal() { document.getElementById('upload-modal').classList.add('hidden'); }
         function switchTab(tabId, el) {
@@ -472,9 +442,9 @@
             const email = document.getElementById('login-email').value;
             const pass = document.getElementById('login-pass').value;
             const btn = document.getElementById('btn-login');
-            btn.disabled = true; btn.innerText = "Verificando...";
+            btn.disabled = true; 
             try { await firebase.auth().signInWithEmailAndPassword(email, pass); } 
-            catch (e) { alert("Acceso denegado."); btn.disabled = false; btn.innerText = "Iniciar Sesión"; }
+            catch (e) { alert("Error."); btn.disabled = false; }
         }
         function handleLogout() { firebase.auth().signOut(); window.location.reload(); }
         async function downloadOfficialReport() {
@@ -482,8 +452,7 @@
             const res = await fetch('/api/report/generate', { headers: { 'Authorization': `Bearer ${token}` } });
             const blob = await res.blob();
             const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = "Auditoria_MNPT.pdf"; a.click();
+            const a = document.createElement('a'); a.href = url; a.download = "Auditoria.pdf"; a.click();
         }
     </script>
 </body>
