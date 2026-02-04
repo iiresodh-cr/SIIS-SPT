@@ -4,6 +4,7 @@ import logging
 import datetime
 import json
 import re
+import google.auth
 from typing import Optional, List, Dict, Any
 from fastapi import FastAPI, Depends, HTTPException, Request, UploadFile, File, Form, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -174,6 +175,7 @@ async def list_pending(user=Depends(get_current_user)):
     if not user["is_admin"]:
         raise HTTPException(status_code=403)
     try:
+        creds, _ = google.auth.default()
         subs_stream = db.collection("artifacts").document(APP_ID).collection("submissions").where("status", "==", "PENDIENTE").stream()
         bucket = storage_client.bucket(BUCKET_NAME)
         results = []
@@ -188,7 +190,8 @@ async def list_pending(user=Depends(get_current_user)):
                 data["file_url"] = blob.generate_signed_url(
                     version="v4", 
                     expiration=datetime.timedelta(minutes=60), 
-                    method="GET"
+                    method="GET",
+                    service_account_email=creds.service_account_email
                 )
             
             # Recuperamos campo 'id' interno para protagonismo visual
