@@ -294,19 +294,12 @@ async def download_proxy(path: str, token: str = Query(...)):
 @app.get("/api/admin/pending")
 async def list_pending(request: Request, user=Depends(get_current_user)):
     """
-    MODIFICADO: Implementación estricta de la documentación V4 de Google Cloud Storage.
-    Se inyecta el service_account_email para que funcione en Cloud Run.
+    MODIFICADO: Implementación estricta usando la función manual V4 para evitar
+    conflictos de dominio y problemas de firma en Cloud Run.
     """
     if not user["is_admin"]:
         raise HTTPException(status_code=403)
     try:
-        # --- OBTENCIÓN DE CREDENCIALES PARA FIRMA V4 ---
-        creds, _ = google.auth.default()
-        if not creds.valid:
-            # Importamos Request solo aquí para evitar conflicto de nombres con el parámetro 'request'
-            from google.auth.transport.requests import Request as GoogleAuthRequest
-            creds.refresh(GoogleAuthRequest())
-        
         subs_stream = db.collection("artifacts").document(APP_ID).collection("submissions").where("status", "==", "PENDIENTE").stream()
         results = []
         
@@ -315,21 +308,9 @@ async def list_pending(request: Request, user=Depends(get_current_user)):
             file_path = data.get("file_path")
             
             if file_path:
-                blob = storage_client.bucket(BUCKET_NAME).blob(file_path)
-                
-                # --- GENERACIÓN URL V4 SEGÚN DOCUMENTACIÓN ---
-                signed_url = blob.generate_signed_url(
-                    version="v4",
-                    expiration=datetime.timedelta(minutes=15),
-                    method="GET",
-                    service_account_email=creds.service_account_email # Requisito clave para Cloud Run
-                )
-                
-                # FIX CRÍTICO: Reemplazo forzado del dominio para evitar redirección al Login de Google
-                if "storage.cloud.google.com" in signed_url:
-                    data["file_url"] = signed_url.replace("storage.cloud.google.com", "storage.googleapis.com")
-                else:
-                    data["file_url"] = signed_url
+                # Usamos la función manual que genera la URL correcta con storage.googleapis.com
+                # y utiliza IAM Signer para firmar remotamente.
+                data["file_url"] = generate_v4_signed_url_manual(BUCKET_NAME, file_path)
             
             rec_doc = db.collection("artifacts").document(APP_ID).collection("public").document("data").collection("recommendations").document(data['recommendation_id']).get()
             if rec_doc.exists:
