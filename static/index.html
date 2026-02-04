@@ -15,14 +15,14 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
     <style>
-        /* IMPORTACIÓN DE FUENTE FIJA */
+        /* IMPORTACIÓN Y FIJACIÓN DE FUENTE */
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
         
         :root {
             --brand-color: #009EDB;
         }
 
-        /* RESET VISUAL INTEGRAL */
+        /* RESET VISUAL SIN RECORTES */
         body { 
             font-family: 'Plus Jakarta Sans', sans-serif; 
             background-color: #f1f5f9;
@@ -51,7 +51,7 @@
             } 
         }
 
-        /* ESTILOS DE LA SIDEBAR EXPANDIDOS */
+        /* SIDEBAR ESTRICTA */
         .sidebar-item {
             color: rgba(255, 255, 255, 0.7);
             transition: all 0.3s ease;
@@ -75,7 +75,7 @@
             font-weight: 800;
         }
 
-        /* DISEÑO DEL ID PROTAGONISTA */
+        /* ID PROTAGONISTA EN BLOQUE */
         .id-badge {
             background-color: #eff6ff;
             color: var(--brand-color);
@@ -91,7 +91,7 @@
             font-family: 'Plus Jakarta Sans', sans-serif;
         }
 
-        /* FORMATO PARA INFORMES PIDA EXPANDIDO */
+        /* FORMATO PIDA EXPANDIDO */
         #ai-result h3 { 
             font-size: 1.6rem; 
             font-weight: 800; 
@@ -117,6 +117,26 @@
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.3);
         }
+
+        /* CORRECCIÓN DE ANCHO DE INPUT */
+        .input-percentage {
+            width: 160px; /* Incrementado para evitar cortes */
+            padding: 1.5rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 2rem;
+            text-align: center;
+            font-weight: 800;
+            font-size: 1.875rem;
+            color: var(--brand-color);
+            outline: none;
+            transition: all 0.3s;
+        }
+        
+        .input-percentage:focus {
+            ring: 8px;
+            ring-color: rgba(0, 158, 219, 0.1);
+            border-color: var(--brand-color);
+        }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden">
@@ -141,7 +161,7 @@
                 <h1 class="text-4xl font-black text-slate-800 tracking-tighter">SIIS-SPT</h1>
                 
                 <p class="text-slate-400 text-xs font-bold uppercase tracking-[0.2em] mt-4">
-                    Sistema de Auditoría CR
+                    Auditoría y Monitoreo CR
                 </p>
             </div>
             
@@ -155,7 +175,7 @@
                     <input 
                         type="email" 
                         id="login-email" 
-                        placeholder="Usuario Institucional" 
+                        placeholder="Correo Institucional" 
                         class="w-full pl-14 pr-5 py-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-[#009EDB]/20 transition-all"
                     >
                 </div>
@@ -193,7 +213,7 @@
         <div class="p-10 bg-white border-b border-slate-100 mb-10 flex flex-col items-center justify-center text-center">
             <img 
                 src="https://storage.googleapis.com/mnpt-img/image002.png" 
-                alt="Logo MNPT" 
+                alt="MNPT Logo" 
                 class="h-24 w-auto object-contain"
             >
             <p class="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-6 leading-tight">
@@ -225,7 +245,7 @@
                 class="sidebar-item hidden bg-white/10 border border-white/20 group"
             >
                 <i data-lucide="shield-check" class="mr-4 w-7 h-7"></i>
-                <span class="font-bold text-sm uppercase tracking-tight">Validación Técnica</span>
+                <span class="font-bold text-sm uppercase tracking-tight">Panel de Validación</span>
             </button>
             
             <div class="pt-12 border-t border-white/20 mt-10 px-5 text-center">
@@ -264,13 +284,13 @@
             <div class="flex justify-between items-end mb-16">
                 <div>
                     <h2 class="text-7xl font-black text-slate-800 tracking-tighter mb-4">Auditoría</h2>
-                    <p class="text-slate-500 font-semibold text-2xl italic">Estado de cumplimiento institucional.</p>
+                    <p class="text-slate-500 font-semibold text-2xl italic">Cumplimiento institucional oficial.</p>
                 </div>
                 <div 
                     id="inst-tag" 
                     class="bg-white px-10 py-5 rounded-3xl border border-slate-200 shadow-sm text-xs font-black uppercase tracking-widest text-slate-400 italic"
                 >
-                    Sincronizando con Firestore...
+                    Sincronizando...
                 </div>
             </div>
 
@@ -307,17 +327,17 @@
         >
             <div class="max-w-5xl mx-auto text-center">
                 <h2 class="text-7xl font-black text-slate-800 mb-5 tracking-tighter">Motor PIDA</h2>
-                <p class="text-slate-500 mb-16 text-2xl font-medium italic">IA Avanzada para la Defensa del MNPT.</p>
+                <p class="text-slate-500 mb-16 text-2xl font-medium italic">Plataforma de Investigación y Defensa Avanzada.</p>
                 
                 <div class="bg-white p-16 rounded-[4rem] border border-slate-200 shadow-2xl text-left">
                     <div class="mb-12">
                         <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-8">
-                            Descripción del Obstáculo o Barrera Institucional:
+                            Descripción del Obstáculo Institucional:
                         </label>
                         <textarea 
                             id="ai-input" 
                             class="w-full h-72 p-12 bg-slate-50 border-0 rounded-[3rem] focus:ring-4 focus:ring-[#009EDB]/10 outline-none text-2xl leading-relaxed" 
-                            placeholder="Escriba aquí el desafío técnico..."
+                            placeholder="Escriba aquí el desafío técnico o político..."
                         ></textarea>
                     </div>
                     
@@ -327,7 +347,7 @@
                         class="w-full text-white py-8 rounded-[2.5rem] font-black text-2xl uppercase tracking-widest shadow-2xl transition-all active:scale-95 hover:opacity-90" 
                         style="background-color: var(--brand-color);"
                     >
-                        Ejecutar Análisis de Incidencia
+                        Ejecutar Análisis Estratégico
                     </button>
                     
                     <div 
@@ -344,7 +364,7 @@
             class="tab-content"
         >
             <h2 class="text-7xl font-black mb-5 tracking-tighter" style="color: var(--brand-color);">Validación</h2>
-            <p class="text-slate-500 mb-20 text-2xl">Revisión de evidencias asistida por el Motor PIDA.</p>
+            <p class="text-slate-500 mb-20 text-2xl">Revisión técnica de evidencias asistida por IA.</p>
             
             <div 
                 id="admin-pending-container" 
@@ -363,7 +383,7 @@
             <div class="flex justify-between items-start mb-12">
                 <div>
                     <h3 class="text-5xl font-black text-slate-800 mb-3">Cargar Prueba</h3>
-                    <p class="text-slate-500 font-bold text-xl">Acreditación de cumplimiento.</p>
+                    <p class="text-slate-500 font-bold text-xl">Certificación de cumplimiento.</p>
                 </div>
                 <button 
                     onclick="closeModal()" 
@@ -381,7 +401,7 @@
             <div class="space-y-12">
                 <div>
                     <label class="block text-xs font-black uppercase text-slate-400 mb-6 tracking-widest">
-                        Resumen técnico del logro:
+                        Resumen técnico del avance:
                     </label>
                     <textarea 
                         id="modal-desc" 
@@ -404,7 +424,7 @@
                     class="w-full py-7 text-white rounded-[2.5rem] font-black uppercase text-sm tracking-widest shadow-2xl transition-all active:scale-95 hover:opacity-90" 
                     style="background-color: var(--brand-color);"
                 >
-                    Sincronizar con Firestore
+                    Registrar en Firestore
                 </button>
             </div>
         </div>
@@ -434,7 +454,7 @@
             }
         });
 
-        // SINCRONIZACIÓN DE DATOS MAESTRA
+        // SINCRONIZACIÓN DE DATOS
         async function syncSystemData(user) {
             const token = await user.getIdToken();
             try {
@@ -446,7 +466,7 @@
                 
                 if (profile.is_admin) { 
                     document.getElementById('admin-tab').classList.remove('hidden'); 
-                    document.getElementById('inst-tag').innerText = "Acceso: Administrador IIRESODH"; 
+                    document.getElementById('inst-tag').innerText = "ACCESO: ADMINISTRADOR IIRESODH"; 
                     loadPendingAdminQueue(); 
                 }
                 
@@ -458,11 +478,11 @@
                 renderDashboard(data);
                 
             } catch (err) { 
-                console.error("Error crítico de sincronización:", err); 
+                console.error("Error de sincronización:", err); 
             }
         }
 
-        // RENDERIZADO DEL DASHBOARD (ID PROTAGONISTA)
+        // RENDER DASHBOARD (ID PROTAGONISTA)
         function renderDashboard(data) {
             const list = document.getElementById('recommendations-list');
             
@@ -477,8 +497,8 @@
                         </div>
                     </td>
                     <td class="p-12 align-top">
-                        <p class="text-slate-500 font-semibold text-lg line-clamp-4 hover:line-clamp-none transition-all duration-300">
-                            ${item.description || 'Sin datos técnicos.'}
+                        <p class="text-slate-500 font-semibold text-lg leading-relaxed line-clamp-4 hover:line-clamp-none transition-all duration-300">
+                            ${item.description || 'Sin datos.'}
                         </p>
                     </td>
                     <td class="p-12 text-center align-top pt-14">
@@ -505,14 +525,14 @@
             lucide.createIcons();
         }
 
-        // ANÁLISIS DE INCIDENCIA PIDA
+        // MOTOR PIDA
         async function analyzeInstitutionalBarrier() {
             const text = document.getElementById('ai-input').value; 
             if (!text.trim()) return;
             
             const resDiv = document.getElementById('ai-result'); 
             resDiv.classList.remove('hidden'); 
-            resDiv.innerHTML = '<div class="flex items-center font-bold text-2xl text-slate-400 p-10"><i data-lucide="refresh-cw" class="animate-spin mr-6 w-10 h-10"></i> PIDA Consultando...</div>';
+            resDiv.innerHTML = '<div class="flex items-center font-bold text-2xl text-slate-400 p-10"><i data-lucide="refresh-cw" class="animate-spin mr-6 w-10 h-10"></i> PIDA Analizando...</div>';
             lucide.createIcons();
 
             const token = await firebase.auth().currentUser.getIdToken();
@@ -531,11 +551,11 @@
                 resDiv.innerHTML = marked.parse(data.analysis);
                 
             } catch (e) { 
-                resDiv.innerHTML = "Error en comunicación con motor PIDA."; 
+                resDiv.innerHTML = "Fallo en motor IA."; 
             }
         }
 
-        // PANEL ADMINISTRATIVO (SOLUCIÓN 403 Y RIGOR AVANCE)
+        // PANEL DE VALIDACIÓN (SOLUCIÓN 403 Y LAYOUT)
         async function loadPendingAdminQueue() {
             const token = await firebase.auth().currentUser.getIdToken();
             const res = await fetch('/api/admin/pending', { 
@@ -556,7 +576,7 @@
                                 ${sub.description}
                             </h4>
                             <p class="text-sm text-slate-400 font-bold mb-10 italic uppercase tracking-wider">
-                                Remitente institucional: ${sub.submitted_by}
+                                REMITENTE: ${sub.submitted_by}
                             </p>
                             <div class="flex space-x-6">
                                 <a 
@@ -570,7 +590,7 @@
                                     onclick="consultAISuggestion('${sub.id}', '${sub.recommendation_id}')" 
                                     class="px-10 py-5 bg-[#009EDB]/10 text-[#009EDB] rounded-3xl text-xs font-black border border-[#009EDB]/20 flex items-center hover:bg-[#009EDB]/20 transition-all shadow-sm"
                                 >
-                                    <i data-lucide="brain" class="w-5 h-5 mr-4"></i> Consultar Propuesta PIDA
+                                    <i data-lucide="brain" class="w-5 h-5 mr-4"></i> Propuesta PIDA
                                 </button>
                             </div>
                             <div 
@@ -579,14 +599,14 @@
                             ></div>
                         </div>
                         
-                        <div class="flex flex-col space-y-8 items-end pl-12 border-l border-slate-100">
+                        <div class="flex flex-col space-y-8 items-end pl-12 border-l border-slate-100 shrink-0">
                             <div class="flex flex-col items-end">
-                                <span class="text-[10px] font-black text-slate-300 uppercase mb-4 tracking-widest">
-                                    Cumplimiento actual: ${sub.current_progress}%
+                                <span class="text-[11px] font-black text-slate-300 uppercase mb-4 tracking-widest">
+                                    CUMPLIMIENTO ACTUAL: ${sub.current_progress}%
                                 </span>
                                 
-                                <label class="text-xs font-black text-slate-400 uppercase mb-4 tracking-widest">
-                                    Nuevo Avance Global (%)
+                                <label class="text-[11px] font-black text-slate-400 uppercase mb-4 tracking-widest">
+                                    NUEVO AVANCE GLOBAL (%)
                                 </label>
                                 
                                 <input 
@@ -594,7 +614,7 @@
                                     id="progress-${sub.id}" 
                                     value="" 
                                     placeholder="0-100" 
-                                    class="w-32 p-6 border-2 border-slate-200 rounded-[2rem] text-center font-black text-3xl text-[#009EDB] focus:ring-8 focus:ring-[#009EDB]/10 outline-none transition-all shadow-sm"
+                                    class="input-percentage"
                                 >
                             </div>
                             
@@ -613,11 +633,11 @@
             }
         }
 
-        // PETICIÓN DE SUGERENCIA IA PIDA
+        // SUGERENCIA PIDA
         async function consultAISuggestion(subId, recId) {
             const div = document.getElementById(`suggestion-${subId}`); 
             div.classList.remove('hidden'); 
-            div.innerHTML = '<div class="flex items-center"><i data-lucide="refresh-cw" class="animate-spin mr-4 w-6 h-6"></i> PIDA analizando brecha técnica...</div>';
+            div.innerHTML = '<div class="flex items-center"><i data-lucide="refresh-cw" class="animate-spin mr-4 w-6 h-6"></i> Analizando brecha...</div>';
             lucide.createIcons();
             
             const token = await firebase.auth().currentUser.getIdToken();
@@ -644,21 +664,21 @@
                         onclick="document.getElementById('progress-${subId}').value=${data.percentage}" 
                         class="mt-6 text-[#009EDB] font-black underline uppercase text-xs tracking-widest"
                     >
-                        Cargar valor de IA
+                        Cargar valor sugerido
                     </button>
                 `;
                 
             } catch (e) { 
-                div.innerHTML = "Fallo en motor de análisis."; 
+                div.innerHTML = "Fallo de conexión con PIDA."; 
             }
         }
 
-        // PROCESO DE APROBACIÓN TÉCNICA
+        // VALIDACIÓN FINAL
         async function approveSubmission(submissionId) {
             const pVal = document.getElementById(`progress-${submissionId}`).value;
             
             if (!pVal) { 
-                alert("Debe asignar un porcentaje."); 
+                alert("Asigne un porcentaje para continuar."); 
                 return; 
             }
             
@@ -682,20 +702,20 @@
                 });
                 
                 if (res.ok) { 
-                    alert("Cumplimiento actualizado en Firestore."); 
+                    alert("Firestore actualizado satisfactoriamente."); 
                     loadPendingAdminQueue(); 
                 }
                 
             } catch (e) { 
-                alert("Error técnico en validación."); 
+                alert("Error técnico en la operación."); 
             }
         }
 
-        // CARGA DE EVIDENCIA PDF
+        // CARGA PDF
         async function processEvidenceUpload() {
             const btn = document.getElementById('btn-submit-ev'); 
             btn.disabled = true; 
-            btn.innerText = "Sincronizando...";
+            btn.innerText = "Registrando...";
             
             const token = await firebase.auth().currentUser.getIdToken();
             const formData = new FormData();
@@ -713,7 +733,7 @@
                     body: formData 
                 });
                 
-                alert("Evidencia subida correctamente."); 
+                alert("Evidencia subida al Bucket privado."); 
                 closeModal(); 
                 location.reload();
                 
@@ -723,7 +743,7 @@
             }
         }
 
-        // UTILIDADES UI
+        // FUNCIONES UI
         function openModal(id) { 
             document.getElementById('modal-rec-id').value = id; 
             document.getElementById('upload-modal').classList.remove('hidden'); 
@@ -747,7 +767,7 @@
             try { 
                 await firebase.auth().signInWithEmailAndPassword(email, pass); 
             } catch (e) { 
-                alert("Acceso denegado."); 
+                alert("Error de autenticación."); 
             }
         }
 
