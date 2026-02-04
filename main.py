@@ -92,90 +92,6 @@ async def get_current_user(request: Request) -> Dict[str, Any]:
         logger.error(f"Error de Auth: {str(e)}")
         raise HTTPException(status_code=401, detail="Token inválido")
 
-# --- FUNCIÓN DE FIRMA MANUAL V4 CORREGIDA ---
-def generate_v4_signed_url_manual(bucket_name, blob_name):
-    """
-    Genera una URL firmada V4 para Google Cloud Storage usando IAM.
-    CORRECCIÓN: Usa safe='/' para evitar encoding de slashes que rompe la URL.
-    """
-    try:
-        # 1. Credenciales
-        creds, project = google.auth.default()
-        auth_req = google.auth.transport.requests.Request()
-        creds.refresh(auth_req)
-        service_account_email = creds.service_account_email
-
-        if not service_account_email:
-            logger.error("No se pudo obtener el email de la cuenta de servicio.")
-            return None
-
-        # 2. Configuración
-        now = datetime.datetime.now(datetime.timezone.utc)
-        request_timestamp = now.strftime("%Y%m%dT%H%M%SZ")
-        datestamp = now.strftime("%Y%m%d")
-        expiration = 3600 
-
-        # 3. Recursos Canónicos
-        host = "storage.googleapis.com"
-        # FIX: safe='/' es crucial para que la ruta coincida con lo que espera el navegador y GCS
-        encoded_path = urllib.parse.quote(blob_name, safe='/')
-        canonical_uri = f"/{bucket_name}/{encoded_path}"
-        
-        credential_scope = f"{datestamp}/auto/storage/goog4_request"
-        credential = f"{service_account_email}/{credential_scope}"
-        
-        canonical_headers = f"host:{host}\n"
-        signed_headers = "host"
-
-        query_params = {
-            "X-Goog-Algorithm": "GOOG4-RSA-SHA256",
-            "X-Goog-Credential": credential,
-            "X-Goog-Date": request_timestamp,
-            "X-Goog-Expires": str(expiration),
-            "X-Goog-SignedHeaders": signed_headers,
-        }
-        
-        canonical_query_string = "&".join(
-            [f"{k}={urllib.parse.quote(v, safe='')}" for k, v in sorted(query_params.items())]
-        )
-
-        # 4. Canonical Request
-        canonical_request = "\n".join([
-            "GET",
-            canonical_uri,
-            canonical_query_string,
-            canonical_headers,
-            signed_headers,
-            "UNSIGNED-PAYLOAD"
-        ])
-
-        # 5. String to Sign
-        algorithm = "GOOG4-RSA-SHA256"
-        canonical_request_hash = hashlib.sha256(canonical_request.encode("utf-8")).hexdigest()
-        
-        string_to_sign = "\n".join([
-            algorithm,
-            request_timestamp,
-            credential_scope,
-            canonical_request_hash
-        ])
-
-        # 6. Firma IAM
-        signer = iam.Signer(auth_req, creds, service_account_email)
-        signature_bytes = signer.sign(string_to_sign.encode("utf-8"))
-        signature_hex = binascii.hexlify(signature_bytes).decode("utf-8")
-
-        # 7. URL Final
-        final_url = f"https://{host}{canonical_uri}?{canonical_query_string}&X-Goog-Signature={signature_hex}"
-        
-        return final_url
-
-    except Exception as e:
-        logger.error(f"Error CRÍTICO generando firma V4: {str(e)}")
-        # Fallback de emergencia: intentar devolver la URL pública o raw si falla la firma
-        # para evitar que el frontend construya una URL rota.
-        return f"https://storage.googleapis.com/{bucket_name}/{urllib.parse.quote(blob_name, safe='/')}"
-
 # --- API ENDPOINTS ---
 
 @app.get("/api/auth/me")
@@ -296,20 +212,31 @@ async def download_proxy(path: str, token: str = Query(...)):
 
 @app.get("/api/admin/pending")
 async def list_pending(request: Request, user=Depends(get_current_user)):
+    """
+    MODIFICADO: Estrategia Proxy Segura.
+    En lugar de intentar generar Signed URLs (que fallan por permisos IAM),
+    generamos una URL que apunta a nuestro propio endpoint /api/evidence/proxy.
+    Esto usa las credenciales del servidor y es 100% fiable.
+    """
     if not user["is_admin"]:
         raise HTTPException(status_code=403)
     try:
         subs_stream = db.collection("artifacts").document(APP_ID).collection("submissions").where("status", "==", "PENDIENTE").stream()
         results = []
         
+        # Obtenemos la URL base del servidor (ej: https://mi-app.run.app)
+        base_url = str(request.base_url).rstrip("/")
+        
         for s in subs_stream:
             data = s.to_dict()
             file_path = data.get("file_path")
             
             if file_path:
-                # Usamos la función manual corregida con safe='/'
-                signed_url = generate_v4_signed_url_manual(BUCKET_NAME, file_path)
-                data["file_url"] = signed_url
+                # Construimos la URL al proxy.
+                # El frontend añadirá "&token=..." al final, lo cual es válido
+                # porque aquí ya iniciamos los query params con "?path=..."
+                encoded_path = urllib.parse.quote(file_path)
+                data["file_url"] = f"{base_url}/api/evidence/proxy?path={encoded_path}"
             
             rec_doc = db.collection("artifacts").document(APP_ID).collection("public").document("data").collection("recommendations").document(data['recommendation_id']).get()
             if rec_doc.exists:
