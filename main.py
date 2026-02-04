@@ -61,16 +61,13 @@ class SuggestionInput(BaseModel):
     submission_id: str
     recommendation_id: str
 
-# --- MIDDLEWARE DE SEGURIDAD ESTÁNDAR ---
+# --- MIDDLEWARE DE SEGURIDAD (RESTAURADO AL ORIGINAL) ---
 async def get_current_user(request: Request) -> Dict[str, Any]:
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="No autorizado")
     
     token = auth_header.split("Bearer ")[1]
-    return verify_firebase_token(token)
-
-def verify_firebase_token(token: str):
     try:
         decoded_token = auth.verify_id_token(token)
         email = decoded_token.get("email")
@@ -78,16 +75,15 @@ def verify_firebase_token(token: str):
         user_ref = db.collection("artifacts").document(APP_ID).collection("users").document(email)
         user_doc = user_ref.get()
         
-        # Fallback por si el usuario es válido en Firebase pero no está en la DB
-        is_admin = False
-        user_data = {"email": email}
-
-        if user_doc.exists:
-            user_data = user_doc.to_dict()
-            is_admin = user_data.get("role") == "admin" or user_data.get("inst_slug") == "all"
+        # RESTAURADO: Si no existe, devuelve error 403 como antes
+        if not user_doc.exists:
+            raise HTTPException(status_code=403, detail="Usuario no registrado en Firestore")
             
-        user_data["is_admin"] = is_admin
+        user_data = user_doc.to_dict()
+        user_data["is_admin"] = user_data.get("role") == "admin" or user_data.get("inst_slug") == "all"
         return user_data
+    except HTTPException as he:
+        raise he
     except Exception as e:
         logger.error(f"Error de Auth: {str(e)}")
         raise HTTPException(status_code=401, detail="Token inválido")
@@ -103,49 +99,44 @@ async def auth_me(user=Depends(get_current_user)):
         "role": user.get("role")
     }
 
-# --- ENDPOINT ESPECIAL: PROXY DE DESCARGA ---
+# --- NUEVO: PROXY DE DESCARGA (Soluciona el error 403 Forbidden) ---
 @app.get("/api/evidence/proxy")
 async def download_proxy(path: str, token: str = Query(...)):
-    """
-    Este endpoint descarga el archivo usando los permisos del servidor (que SÍ funcionan)
-    y se lo pasa al navegador. 
-    Se pasa el token por URL (?token=...) porque al dar click en un link no se envían headers.
-    """
-    # 1. Verificar el token manualmente
+    # Verificamos el token manualmente aquí para permitir acceso por URL
     try:
-        user = verify_firebase_token(token)
-        if not user.get("is_admin"):
-             raise HTTPException(status_code=403, detail="Solo administradores")
-    except Exception:
-        raise HTTPException(status_code=401, detail="Token inválido o expirado")
+        decoded_token = auth.verify_id_token(token)
+        email = decoded_token.get("email")
+        # Verificamos rol admin
+        user_ref = db.collection("artifacts").document(APP_ID).collection("users").document(email)
+        user_doc = user_ref.get()
+        if not user_doc.exists:
+             raise HTTPException(status_code=403, detail="No autorizado")
+        
+        user_data = user_doc.to_dict()
+        is_admin = user_data.get("role") == "admin" or user_data.get("inst_slug") == "all"
+        
+        if not is_admin:
+             raise HTTPException(status_code=403, detail="Requiere permisos de administrador")
 
-    try:
-        # 2. Conectar al bucket y bajar el archivo como stream
+        # Descarga interna
         bucket = storage_client.bucket(BUCKET_NAME)
         blob = bucket.blob(path)
         
         if not blob.exists():
-             raise HTTPException(status_code=404, detail="El archivo no existe en el bucket")
+             raise HTTPException(status_code=404, detail="Archivo no encontrado")
 
-        # Leer archivo en memoria (stream)
         file_stream = io.BytesIO(blob.download_as_bytes())
-        
-        # Determinar tipo de archivo (PDF, JPG, etc)
         content_type = blob.content_type or "application/octet-stream"
         filename = path.split("/")[-1]
 
-        # 3. Responder con el archivo real
         return StreamingResponse(
             file_stream, 
             media_type=content_type,
-            headers={
-                "Content-Disposition": f"inline; filename={filename}",
-                "Cache-Control": "private, max-age=3600"
-            }
+            headers={"Content-Disposition": f"inline; filename={filename}"}
         )
     except Exception as e:
         logger.error(f"Error Proxy: {str(e)}")
-        raise HTTPException(status_code=500, detail="Error recuperando el archivo")
+        raise HTTPException(status_code=401, detail="Acceso denegado al archivo")
 
 @app.get("/api/recommendations")
 async def list_recommendations(user=Depends(get_current_user)):
@@ -228,17 +219,15 @@ async def list_pending(request: Request, user=Depends(get_current_user)):
         subs_stream = db.collection("artifacts").document(APP_ID).collection("submissions").where("status", "==", "PENDIENTE").stream()
         results = []
         
-        # Detectar URL base de tu API (ej: https://siis-stp-xyz.a.run.app)
+        # Obtenemos la URL base del servidor actual
         base_url = str(request.base_url).rstrip("/")
-
+        
         for s in subs_stream:
             data = s.to_dict()
             file_path = data.get("file_path")
             
             if file_path:
-                # CAMBIO CLAVE:
-                # En lugar de dar una URL de Google que falla, damos una URL de NUESTRO propio servidor.
-                # El frontend deberá concatenar el token al final: url + "&token=" + firebase_token
+                # CAMBIO: Usamos nuestro proxy local en lugar de Google Storage
                 encoded_path = urllib.parse.quote(file_path)
                 data["file_url"] = f"{base_url}/api/evidence/proxy?path={encoded_path}"
             
