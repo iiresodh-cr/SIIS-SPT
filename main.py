@@ -4,9 +4,17 @@ import logging
 import datetime
 import json
 import re
-import urllib.parse # <--- AGREGADO: Necesario para codificar la URL del archivo
+import hashlib
+import binascii
+import urllib.parse
 from typing import Optional, List, Dict, Any
-from fastapi import FastAPI, Depends, HTTPException, Request, UploadFile, File, Form, status, Query # <--- AGREGADO: Query para recibir el token
+
+# --- IMPORTACIONES DE GOOGLE AUTH ---
+import google.auth
+import google.auth.transport.requests
+from google.auth import iam
+
+from fastapi import FastAPI, Depends, HTTPException, Request, UploadFile, File, Form, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, StreamingResponse
@@ -60,7 +68,7 @@ class SuggestionInput(BaseModel):
     submission_id: str
     recommendation_id: str
 
-# --- MIDDLEWARE DE SEGURIDAD (INTACTO - ORIGINAL) ---
+# --- MIDDLEWARE DE SEGURIDAD ---
 async def get_current_user(request: Request) -> Dict[str, Any]:
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
@@ -84,6 +92,87 @@ async def get_current_user(request: Request) -> Dict[str, Any]:
         logger.error(f"Error de Auth: {str(e)}")
         raise HTTPException(status_code=401, detail="Token inválido")
 
+# --- FUNCIÓN DE FIRMA MANUAL V4 ADAPTADA (SIN JSON FILE) ---
+def generate_v4_signed_url_manual(bucket_name, blob_name):
+    """
+    Implementación manual del algoritmo V4 de Google, usando IAM Signer
+    para firmar remotamente sin necesidad de clave privada local.
+    """
+    try:
+        # 1. Obtener credenciales y refrescar para tener el email
+        creds, project = google.auth.default()
+        auth_req = google.auth.transport.requests.Request()
+        creds.refresh(auth_req)
+        service_account_email = creds.service_account_email
+
+        # 2. Configuración de tiempo
+        now = datetime.datetime.now(datetime.timezone.utc)
+        request_timestamp = now.strftime("%Y%m%dT%H%M%SZ")
+        datestamp = now.strftime("%Y%m%d")
+        expiration = 3600 # 1 hora
+
+        # 3. Construcción de Recursos Canónicos
+        # Usamos estilo path: storage.googleapis.com/bucket/objeto
+        host = "storage.googleapis.com"
+        canonical_uri = f"/{bucket_name}/{urllib.parse.quote(blob_name, safe='')}"
+        
+        credential_scope = f"{datestamp}/auto/storage/goog4_request"
+        credential = f"{service_account_email}/{credential_scope}"
+        
+        # Headers firmados
+        canonical_headers = f"host:{host}\n"
+        signed_headers = "host"
+
+        # Query Params Canónicos
+        query_params = {
+            "X-Goog-Algorithm": "GOOG4-RSA-SHA256",
+            "X-Goog-Credential": credential,
+            "X-Goog-Date": request_timestamp,
+            "X-Goog-Expires": str(expiration),
+            "X-Goog-SignedHeaders": signed_headers,
+        }
+        
+        # Ordenar parámetros para la firma
+        canonical_query_string = "&".join(
+            [f"{k}={urllib.parse.quote(v, safe='')}" for k, v in sorted(query_params.items())]
+        )
+
+        # 4. Solicitud Canónica (Canonical Request)
+        canonical_request = "\n".join([
+            "GET",
+            canonical_uri,
+            canonical_query_string,
+            canonical_headers,
+            signed_headers,
+            "UNSIGNED-PAYLOAD"
+        ])
+
+        # 5. String to Sign
+        algorithm = "GOOG4-RSA-SHA256"
+        canonical_request_hash = hashlib.sha256(canonical_request.encode("utf-8")).hexdigest()
+        
+        string_to_sign = "\n".join([
+            algorithm,
+            request_timestamp,
+            credential_scope,
+            canonical_request_hash
+        ])
+
+        # 6. FIRMA REMOTA (Aquí está la magia para Cloud Run)
+        # Usamos IAM API en lugar de archivo local
+        signer = iam.Signer(auth_req, creds, service_account_email)
+        signature_bytes = signer.sign(string_to_sign.encode("utf-8"))
+        signature_hex = binascii.hexlify(signature_bytes).decode("utf-8")
+
+        # 7. Construcción URL Final
+        final_url = f"https://{host}{canonical_uri}?{canonical_query_string}&X-Goog-Signature={signature_hex}"
+        
+        return final_url
+
+    except Exception as e:
+        logger.error(f"Error generando firma manual V4: {str(e)}")
+        return None
+
 # --- API ENDPOINTS ---
 
 @app.get("/api/auth/me")
@@ -100,7 +189,6 @@ async def list_recommendations(user=Depends(get_current_user)):
     try:
         ref = db.collection("artifacts").document(APP_ID).collection("public").document("data").collection("recommendations")
         docs = ref.stream()
-        # Capturamos Firestore ID y el campo 'id' interno para protagonismo
         all_recs = [{"firestore_doc_id": doc.id, **doc.to_dict()} for doc in docs]
         
         if user["is_admin"]:
@@ -169,75 +257,24 @@ async def upload_evidence(
         logger.error(f"Fallo carga: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-# --- NUEVO: PROXY DE DESCARGA (AGREGADO PARA SOLUCIONAR EL ERROR 403) ---
-@app.get("/api/evidence/proxy")
-async def download_proxy(path: str, token: str = Query(...)):
-    """
-    Descarga el archivo internamente usando los permisos del servidor y lo entrega al usuario.
-    Verifica el token manualmente ya que viene por URL y no por Header en este caso.
-    """
-    try:
-        # 1. Verificar Token
-        decoded_token = auth.verify_id_token(token)
-        email = decoded_token.get("email")
-        
-        # 2. Verificar Admin (Copia de seguridad)
-        user_ref = db.collection("artifacts").document(APP_ID).collection("users").document(email)
-        user_doc = user_ref.get()
-        if not user_doc.exists:
-             raise HTTPException(status_code=403, detail="No autorizado")
-        
-        user_data = user_doc.to_dict()
-        is_admin = user_data.get("role") == "admin" or user_data.get("inst_slug") == "all"
-        
-        if not is_admin:
-             raise HTTPException(status_code=403, detail="Requiere permisos de administrador")
-
-        # 3. Descargar y Servir
-        bucket = storage_client.bucket(BUCKET_NAME)
-        blob = bucket.blob(path)
-        
-        if not blob.exists():
-             raise HTTPException(status_code=404, detail="Archivo no encontrado")
-
-        file_stream = io.BytesIO(blob.download_as_bytes())
-        content_type = blob.content_type or "application/octet-stream"
-        filename = path.split("/")[-1]
-
-        return StreamingResponse(
-            file_stream, 
-            media_type=content_type,
-            headers={"Content-Disposition": f"inline; filename={filename}"}
-        )
-    except Exception as e:
-        logger.error(f"Error Proxy: {str(e)}")
-        raise HTTPException(status_code=401, detail="Acceso denegado o token inválido")
-# ------------------------------------------------------------------------
-
 @app.get("/api/admin/pending")
-async def list_pending(request: Request, user=Depends(get_current_user)): # <--- Request agregado
-    """Solución 403: Usa el Proxy local en lugar de Signed URLs de Google."""
+async def list_pending(user=Depends(get_current_user)):
+    """Genera URLs firmadas usando el algoritmo V4 manual."""
     if not user["is_admin"]:
         raise HTTPException(status_code=403)
     try:
         subs_stream = db.collection("artifacts").document(APP_ID).collection("submissions").where("status", "==", "PENDIENTE").stream()
-        bucket = storage_client.bucket(BUCKET_NAME)
         results = []
-        
-        # Obtener URL base del servidor actual
-        base_url = str(request.base_url).rstrip("/")
         
         for s in subs_stream:
             data = s.to_dict()
             file_path = data.get("file_path")
             
             if file_path:
-                # MODIFICACIÓN: Construir URL al Proxy local
-                # El frontend debe añadir &token=... al usar este link
-                encoded_path = urllib.parse.quote(file_path)
-                data["file_url"] = f"{base_url}/api/evidence/proxy?path={encoded_path}"
+                # LLAMADA A LA FUNCIÓN MANUAL
+                signed_url = generate_v4_signed_url_manual(BUCKET_NAME, file_path)
+                data["file_url"] = signed_url
             
-            # Recuperamos campo 'id' interno para protagonismo visual
             rec_doc = db.collection("artifacts").document(APP_ID).collection("public").document("data").collection("recommendations").document(data['recommendation_id']).get()
             if rec_doc.exists:
                 rec_info = rec_doc.to_dict()
