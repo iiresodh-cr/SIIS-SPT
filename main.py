@@ -48,7 +48,7 @@ db = firestore.Client(project=PROJECT_ID)
 storage_client = storage.Client(project=PROJECT_ID)
 vertexai.init(project=PROJECT_ID, location=LOCATION)
 
-# --- MODELOS ---
+# --- MODELOS DE DATOS ---
 class BarrierInput(BaseModel):
     text: str
 
@@ -71,14 +71,14 @@ async def get_current_user(request: Request) -> Dict[str, Any]:
         decoded_token = auth.verify_id_token(token)
         email = decoded_token.get("email")
         
-        # Consulta de perfil en Firestore
         user_ref = db.collection("artifacts").document(APP_ID).collection("users").document(email)
         user_doc = user_ref.get()
         
         if not user_doc.exists:
-            raise HTTPException(status_code=403, detail="Usuario no registrado")
+            raise HTTPException(status_code=403, detail="Usuario no registrado en la base de datos")
             
         user_data = user_doc.to_dict()
+        # Admin si rol es 'admin' o slug es 'all'
         user_data["is_admin"] = user_data.get("role") == "admin" or user_data.get("inst_slug") == "all"
         return user_data
     except Exception as e:
@@ -113,51 +113,45 @@ async def list_recommendations(user=Depends(get_current_user)):
 
 @app.post("/api/admin/suggest-progress")
 async def suggest_progress(data: SuggestionInput, user=Depends(get_current_user)):
-    """IA PIDA: Analiza el gap entre recomendación y evidencia."""
+    """Motor PIDA: Analiza la brecha técnica y sugiere un porcentaje."""
     if not user["is_admin"]:
-        raise HTTPException(status_code=403, detail="Solo administradores")
+        raise HTTPException(status_code=403)
     
     try:
-        # Obtener Meta y Logro
         rec_doc = db.collection("artifacts").document(APP_ID).collection("public").document("data").collection("recommendations").document(data.recommendation_id).get()
         sub_doc = db.collection("artifacts").document(APP_ID).collection("submissions").document(data.submission_id).get()
         
-        if not rec_doc.exists or not sub_doc.exists:
-            raise HTTPException(status_code=404, detail="Documentos no encontrados")
-
         meta = rec_doc.to_dict().get("description", "")
         logro = sub_doc.to_dict().get("description", "")
 
         model = GenerativeModel(MODEL_NAME)
         prompt = f"""
-        Como experto auditor del MNPT, evalúa este avance:
-        RECOMENDACIÓN: "{meta}"
-        EVIDENCIA PRESENTADA: "{logro}"
-
-        Propón un porcentaje de cumplimiento (0-100) y justifica técnicamente.
-        Responde exclusivamente en JSON: {{"percentage": valor, "justification": "texto"}}
+        Actúa como auditor del MNPT. Compara la meta con el logro reportado.
+        META: "{meta}"
+        LOGRO: "{logro}"
+        Sugiere un % de avance (0-100) y justifica brevemente.
+        Responde solo en JSON: {{"percentage": valor, "justification": "texto"}}
         """
-        
         response = model.generate_content(prompt)
         match = re.search(r'\{.*\}', response.text, re.DOTALL)
         return json.loads(match.group())
     except Exception as e:
-        logger.error(f"Fallo Sugerencia IA: {str(e)}")
-        raise HTTPException(status_code=500, detail="Error en Motor PIDA")
+        logger.error(f"Error IA: {str(e)}")
+        raise HTTPException(status_code=500, detail="Fallo en motor PIDA")
 
 @app.post("/api/ai/analyze")
 async def analyze_barrier(data: BarrierInput, user=Depends(get_current_user)):
     try:
         model = GenerativeModel(MODEL_NAME)
         prompt = f"""
-        Actúa como la inteligencia de PIDA (Plataforma de Investigación y Defensa Avanzada). 
+        Actúa como la inteligencia central de PIDA (Plataforma de Investigación y Defensa Avanzada). 
         Analiza este obstáculo institucional para el MNPT: "{data.text}"
-        Genera un informe con: 1. INVESTIGACIÓN DE CAUSAS, 2. ESTRATEGIA DE DEFENSA, 3. TÁCTICAS DE INCIDENCIA.
+        Genera: 1. INVESTIGACIÓN DE CAUSAS, 2. ESTRATEGIA DE DEFENSA, 3. TÁCTICAS DE INCIDENCIA.
         """
         response = model.generate_content(prompt)
         return {"analysis": response.text}
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Error en IA.")
+        raise HTTPException(status_code=500, detail="Error en Vertex AI")
 
 @app.post("/api/evidence/upload")
 async def upload_evidence(
@@ -167,59 +161,71 @@ async def upload_evidence(
     user=Depends(get_current_user)
 ):
     try:
-        # 1. Subida al Bucket
         bucket = storage_client.bucket(BUCKET_NAME)
-        blob = bucket.blob(f"evidence/{recommendation_id}/{file.filename}")
+        # Guardamos con una estructura clara en el bucket
+        file_path = f"evidence/{recommendation_id}/{file.filename}"
+        blob = bucket.blob(file_path)
         blob.upload_from_file(file.file, content_type=file.content_type)
         
-        # 2. Generación de URL Segura (Con fallback si fallan los permisos IAM)
-        try:
-            file_url = blob.generate_signed_url(version="v4", expiration=datetime.timedelta(minutes=10080), method="GET")
-        except Exception:
-            logger.warning("Fallo al firmar URL. Usando URL de consola.")
-            file_url = f"https://storage.cloud.google.com/{BUCKET_NAME}/evidence/{recommendation_id}/{file.filename}"
-        
-        # 3. Escritura en Firestore
         sub_ref = db.collection("artifacts").document(APP_ID).collection("submissions").document()
         sub_ref.set({
             "id": sub_ref.id,
             "recommendation_id": recommendation_id,
             "submitted_by": user["email"],
             "description": description,
-            "file_url": file_url,
+            "file_path": file_path, # Guardamos la ruta interna para generar URLs frescas después
             "status": "PENDIENTE",
             "timestamp": firestore.SERVER_TIMESTAMP
         })
-        return {"message": "Evidencia registrada correctamente"}
+        return {"message": "Evidencia subida al bucket y registrada en Firestore"}
     except Exception as e:
-        logger.error(f"FALLO CRÍTICO EN CARGA: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error en servidor: {str(e)}")
+        logger.error(f"Error en carga: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/admin/pending")
 async def list_pending(user=Depends(get_current_user)):
-    if not user["is_admin"]: raise HTTPException(status_code=403)
+    """Genera URLs firmadas al vuelo para evitar errores de expiración."""
+    if not user["is_admin"]:
+        raise HTTPException(status_code=403)
     try:
         subs = db.collection("artifacts").document(APP_ID).collection("submissions").where("status", "==", "PENDIENTE").stream()
+        bucket = storage_client.bucket(BUCKET_NAME)
         results = []
+        
         for s in subs:
-            d = s.to_dict()
-            if "timestamp" in d and d["timestamp"]: d["timestamp"] = d["timestamp"].isoformat()
-            results.append(d)
+            data = s.to_dict()
+            file_path = data.get("file_path")
+            
+            # Generación de URL fresca válida por 1 hora
+            if file_path:
+                blob = bucket.blob(file_path)
+                data["file_url"] = blob.generate_signed_url(
+                    version="v4", 
+                    expiration=datetime.timedelta(minutes=60), 
+                    method="GET"
+                )
+            
+            if "timestamp" in data and data["timestamp"]:
+                data["timestamp"] = data["timestamp"].isoformat()
+            results.append(data)
         return results
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Error al recuperar pendientes")
+        logger.error(f"Error en pendientes: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error al recuperar lista")
 
 @app.post("/api/admin/approve")
 async def approve_submission(action: SubmissionAction, user=Depends(get_current_user)):
-    if not user["is_admin"]: raise HTTPException(status_code=403)
+    if not user["is_admin"]:
+        raise HTTPException(status_code=403)
     try:
         sub_ref = db.collection("artifacts").document(APP_ID).collection("submissions").document(action.submission_id)
         sub_doc = sub_ref.get()
-        if not sub_doc.exists: raise HTTPException(status_code=404)
+        if not sub_doc.exists:
+            raise HTTPException(status_code=404)
         
         rec_id = sub_doc.to_dict().get("recommendation_id")
         
-        # Actualización de estados en cadena
+        # Actualizamos estados
         sub_ref.update({"status": "APROBADO"})
         rec_ref = db.collection("artifacts").document(APP_ID).collection("public").document("data").collection("recommendations").document(rec_id)
         rec_ref.update({
@@ -230,27 +236,34 @@ async def approve_submission(action: SubmissionAction, user=Depends(get_current_
         return {"message": f"Avance actualizado al {action.progress}%"}
     except Exception as e:
         logger.error(f"Error en aprobación: {str(e)}")
-        raise HTTPException(status_code=500, detail="Fallo en base de datos")
+        raise HTTPException(status_code=500, detail="Error en base de datos")
 
 @app.get("/api/report/generate")
 async def generate_pdf(user=Depends(get_current_user)):
     recs = db.collection("artifacts").document(APP_ID).collection("public").document("data").collection("recommendations").stream()
     buffer = io.BytesIO()
     p = canvas.Canvas(buffer, pagesize=letter)
-    p.setFont("Helvetica-Bold", 16); p.drawString(50, 750, "SIIS-SPT: Informe Oficial"); y = 700
+    p.setFont("Helvetica-Bold", 16)
+    p.drawString(50, 750, "SIIS-SPT: Informe de Cumplimiento")
+    y = 700
     for doc in recs:
         d = doc.to_dict()
-        p.setFont("Helvetica-Bold", 10); p.drawString(50, y, f"[{d.get('id')}] {d.get('institution')}")
-        p.setFont("Helvetica", 10); p.drawString(50, y-15, f"Avance: {d.get('progress', 0)}%"); y -= 45
+        p.setFont("Helvetica-Bold", 10)
+        p.drawString(50, y, f"[{d.get('id')}] {d.get('institution')}")
+        p.setFont("Helvetica", 10)
+        p.drawString(50, y-15, f"Avance: {d.get('progress', 0)}%")
+        y -= 45
         if y < 100: p.showPage(); y = 750
-    p.save(); buffer.seek(0)
+    p.save()
+    buffer.seek(0)
     return StreamingResponse(buffer, media_type="application/pdf")
 
 if os.path.exists("static"):
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/")
-async def serve_index(): return FileResponse("static/index.html")
+async def serve_index():
+    return FileResponse("static/index.html")
 
 if __name__ == "__main__":
     import uvicorn
