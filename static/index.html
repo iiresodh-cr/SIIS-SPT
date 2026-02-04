@@ -13,6 +13,10 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
         
+        :root {
+            --brand-color: #009EDB;
+        }
+
         body { 
             font-family: 'Plus Jakarta Sans', sans-serif; 
         }
@@ -31,7 +35,7 @@
             to { opacity: 1; transform: translateY(0); } 
         }
 
-        /* Rediseño de ítems de la barra lateral con el nuevo color */
+        /* Estilos de la barra lateral */
         .sidebar-item {
             color: rgba(255, 255, 255, 0.7);
             transition: all 0.3s ease;
@@ -44,7 +48,7 @@
 
         .sidebar-item.active { 
             background-color: white; 
-            color: #00aff0; 
+            color: var(--brand-color); 
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
 
@@ -60,7 +64,7 @@
     <div id="login-screen" class="fixed inset-0 bg-slate-900 z-[110] flex items-center justify-center p-4">
         <div class="bg-white p-12 rounded-[3rem] shadow-2xl max-w-sm w-full border border-slate-200">
             <div class="text-center mb-10">
-                <div class="inline-flex p-5 rounded-[2rem] shadow-xl mb-6" style="background-color: #00aff0;">
+                <div class="inline-flex p-5 rounded-[2rem] shadow-xl mb-6" style="background-color: var(--brand-color);">
                     <i data-lucide="shield-check" class="text-white w-10 h-10"></i>
                 </div>
                 <h1 class="text-4xl font-black text-slate-800 tracking-tighter">SIIS-SPT</h1>
@@ -70,21 +74,21 @@
             <div class="space-y-4">
                 <div class="relative">
                     <i data-lucide="user" class="absolute left-4 top-4 w-5 h-5 text-slate-400"></i>
-                    <input type="email" id="login-email" placeholder="Usuario Institucional" class="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-[#00aff0]/20 transition-all">
+                    <input type="email" id="login-email" placeholder="Usuario Institucional" class="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-[#009EDB]/20 transition-all">
                 </div>
                 <div class="relative">
                     <i data-lucide="lock" class="absolute left-4 top-4 w-5 h-5 text-slate-400"></i>
-                    <input type="password" id="login-pass" placeholder="Contraseña" class="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-[#00aff0]/20 transition-all">
+                    <input type="password" id="login-pass" placeholder="Contraseña" class="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-[#009EDB]/20 transition-all">
                 </div>
-                <button onclick="handleLogin()" id="btn-login" class="w-full text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-2xl transition-all active:scale-95 hover:opacity-90" style="background-color: #00aff0;">Iniciar Sesión</button>
+                <button onclick="handleLogin()" id="btn-login" class="w-full text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-2xl transition-all active:scale-95 hover:opacity-90" style="background-color: var(--brand-color);">Iniciar Sesión</button>
             </div>
         </div>
     </div>
 
-    <aside class="w-80 flex flex-col shrink-0" style="background-color: #00aff0; color: white;">
-        <div class="p-8 bg-white border-b border-slate-100 mb-8 flex flex-col items-center">
-            <img src="https://storage.googleapis.com/mnpt-img/image002.png" alt="Logo MNPT" class="h-24 w-auto object-contain">
-            <p class="text-[9px] text-slate-400 font-black uppercase tracking-[0.2em] mt-4 text-center leading-relaxed">Plataforma Técnica SPT/CAT</p>
+    <aside class="w-80 flex flex-col shrink-0" style="background-color: var(--brand-color); color: white;">
+        <div class="p-8 bg-white border-b border-slate-100 mb-8 flex flex-col items-center justify-center">
+            <img src="https://storage.googleapis.com/mnpt-img/image002.png" alt="Logo MNPT" class="h-20 w-auto object-contain">
+            <p class="text-[9px] text-slate-400 font-black uppercase tracking-[0.15em] mt-4 text-center">Plataforma Técnica SPT/CAT</p>
         </div>
 
         <nav class="flex-1 px-4 space-y-3">
@@ -158,19 +162,19 @@
                 <div class="bg-white p-14 rounded-[3.5rem] border border-slate-200 shadow-2xl">
                     <div class="mb-10">
                         <label class="block text-xs font-black text-slate-400 uppercase tracking-[0.3em] mb-6">Descripción del Obstáculo:</label>
-                        <textarea id="ai-input" class="w-full h-64 p-10 bg-slate-50 border-0 rounded-[2.5rem] focus:ring-4 focus:ring-[#00aff0]/10 outline-none transition-all text-2xl leading-relaxed" placeholder="Ej: No existe voluntad política para reformar el reglamento interno..."></textarea>
+                        <textarea id="ai-input" class="w-full h-64 p-10 bg-slate-50 border-0 rounded-[2.5rem] focus:ring-4 focus:ring-[#009EDB]/10 outline-none transition-all text-2xl leading-relaxed" placeholder="Ej: No existe voluntad política para reformar el reglamento interno..."></textarea>
                     </div>
                     
-                    <button onclick="analyzeInstitutionalBarrier()" id="ai-btn" class="w-full text-white py-7 rounded-[2rem] font-black text-xl uppercase tracking-widest shadow-2xl transition-all active:scale-95 flex items-center justify-center hover:opacity-90" style="background-color: #00aff0;">Ejecutar Análisis PIDA</button>
+                    <button onclick="analyzeInstitutionalBarrier()" id="ai-btn" class="w-full text-white py-7 rounded-[2rem] font-black text-xl uppercase tracking-widest shadow-2xl transition-all active:scale-95 flex items-center justify-center hover:opacity-90" style="background-color: var(--brand-color);">Ejecutar Análisis PIDA</button>
                     
-                    <div id="ai-result" class="mt-14 p-12 bg-slate-50 text-slate-700 rounded-[3rem] hidden border-l-[16px] border-[#00aff0] whitespace-pre-wrap leading-loose shadow-inner text-xl">
+                    <div id="ai-result" class="mt-14 p-12 bg-slate-50 text-slate-700 rounded-[3rem] hidden border-l-[16px] border-[#009EDB] whitespace-pre-wrap leading-loose shadow-inner text-xl">
                         </div>
                 </div>
             </div>
         </div>
 
         <div id="admin" class="tab-content">
-            <h2 class="text-6xl font-black text-[#00aff0] mb-4 tracking-tighter">Validación</h2>
+            <h2 class="text-6xl font-black mb-4 tracking-tighter" style="color: var(--brand-color);">Validación</h2>
             <p class="text-slate-500 mb-16 text-xl">Revisión técnica de evidencias cargadas por las instituciones.</p>
             
             <div id="admin-pending-container" class="space-y-8">
@@ -186,7 +190,7 @@
         <div class="bg-white p-14 rounded-[4rem] max-w-xl w-full shadow-2xl animate-in zoom-in duration-300">
             <div class="flex justify-between items-start mb-10">
                 <div>
-                    <h3 class="text-4xl font-black tracking-tight mb-2">Cargar Prueba</h3>
+                    <h3 class="text-4xl font-black tracking-tight mb-2 text-slate-800">Cargar Prueba</h3>
                     <p class="text-slate-500 font-bold text-lg">Oficialización de avance técnico.</p>
                 </div>
                 <button onclick="closeModal()" class="text-slate-200 hover:text-red-500 transition-colors"><i data-lucide="x-circle" class="w-10 h-10"></i></button>
@@ -197,15 +201,15 @@
             <div class="space-y-10">
                 <div>
                     <label class="block text-[10px] font-black uppercase text-slate-400 mb-4 tracking-widest">Resumen del logro:</label>
-                    <textarea id="modal-desc" class="w-full p-8 bg-slate-50 border border-slate-100 rounded-[2rem] outline-none focus:ring-4 focus:ring-[#00aff0]/10 text-lg leading-relaxed" rows="4" placeholder="Describa cómo esta acción cumple con la recomendación..."></textarea>
+                    <textarea id="modal-desc" class="w-full p-8 bg-slate-50 border border-slate-100 rounded-[2rem] outline-none focus:ring-4 focus:ring-[#009EDB]/10 text-lg leading-relaxed" rows="4" placeholder="Describa cómo esta acción cumple con la recomendación..."></textarea>
                 </div>
                 
                 <div class="p-8 bg-slate-50 border-4 border-dashed border-slate-200 rounded-[2.5rem] flex flex-col items-center">
                     <label class="block text-[10px] font-black uppercase text-slate-400 mb-6 tracking-widest">Documento Probatorio (PDF):</label>
-                    <input type="file" id="modal-file" class="block w-full text-sm text-slate-500 file:mr-6 file:py-4 file:px-8 file:rounded-full file:border-0 file:text-[11px] file:font-black file:bg-[#00aff0] file:text-white hover:file:bg-[#009bd4] cursor-pointer">
+                    <input type="file" id="modal-file" class="block w-full text-sm text-slate-500 file:mr-6 file:py-4 file:px-8 file:rounded-full file:border-0 file:text-[11px] file:font-black file:bg-[#009EDB] file:text-white hover:file:bg-[#0086ba] cursor-pointer">
                 </div>
 
-                <button onclick="processEvidenceUpload()" id="btn-submit-ev" class="w-full py-6 text-white rounded-[2rem] font-black text-sm uppercase tracking-[0.2em] shadow-2xl transition-all active:scale-95 hover:opacity-90" style="background-color: #00aff0;">Sincronizar con Storage</button>
+                <button onclick="processEvidenceUpload()" id="btn-submit-ev" class="w-full py-6 text-white rounded-[2rem] font-black text-sm uppercase tracking-[0.2em] shadow-2xl transition-all active:scale-95 hover:opacity-90" style="background-color: var(--brand-color);">Sincronizar con Storage</button>
             </div>
         </div>
     </div>
@@ -248,7 +252,7 @@
                 if (isAdmin) {
                     document.getElementById('admin-tab').classList.remove('hidden');
                     document.getElementById('inst-tag').innerText = "Acceso: Administrador Técnico IIRESODH";
-                    document.getElementById('inst-tag').classList.add('text-[#00aff0]', 'border-[#00aff0]/20');
+                    document.getElementById('inst-tag').classList.add('text-[#009EDB]', 'border-[#009EDB]/20');
                     loadPendingAdminQueue();
                 } else {
                     document.getElementById('inst-tag').innerText = "Acceso: Punto Focal Institucional";
@@ -275,13 +279,13 @@
                     <td class="p-10">
                         <div class="flex items-center justify-center space-x-8">
                             <div class="flex-1 bg-slate-100 h-5 rounded-full overflow-hidden max-w-[250px] border border-slate-200 shadow-inner">
-                                <div class="h-full transition-all duration-1000 shadow-lg" style="width:${item.progress}%; background-color: #00aff0;"></div>
+                                <div class="h-full transition-all duration-1000 shadow-lg" style="width:${item.progress}%; background-color: #009EDB;"></div>
                             </div>
                             <span class="text-lg font-black text-slate-700">${item.progress}%</span>
                         </div>
                     </td>
                     <td class="p-10 text-right">
-                        <button onclick="openModal('${item.id}')" class="px-10 py-4 border border-[#00aff0]/20 text-[#00aff0] rounded-[1.5rem] text-[11px] font-black uppercase tracking-widest hover:bg-[#00aff0] hover:text-white transition-all shadow-sm active:scale-95">
+                        <button onclick="openModal('${item.id}')" class="px-10 py-4 border border-[#009EDB]/20 text-[#009EDB] rounded-[1.5rem] text-[11px] font-black uppercase tracking-widest hover:bg-[#009EDB] hover:text-white transition-all shadow-sm active:scale-95">
                             Gestionar
                         </button>
                     </td>
@@ -327,9 +331,9 @@
             if (data.length > 0) {
                 const container = document.getElementById('admin-pending-container');
                 container.innerHTML = data.map(sub => `
-                    <div class="bg-white p-12 rounded-[3.5rem] border border-slate-100 shadow-2xl flex justify-between items-center border-l-[16px] border-l-[#00aff0]">
+                    <div class="bg-white p-12 rounded-[3.5rem] border border-slate-100 shadow-2xl flex justify-between items-center border-l-[16px] border-l-[#009EDB]">
                         <div class="max-w-2xl">
-                            <div class="text-[11px] font-black text-[#00aff0] uppercase tracking-[0.2em] mb-4">${sub.recommendation_id}</div>
+                            <div class="text-[11px] font-black text-[#009EDB] uppercase tracking-[0.2em] mb-4">${sub.recommendation_id}</div>
                             <h4 class="text-2xl font-black text-slate-800 mb-4 leading-tight">${sub.description}</h4>
                             <p class="text-sm text-slate-400 font-bold mb-8 italic">Remitente: ${sub.submitted_by}</p>
                             <a href="${sub.file_url}" target="_blank" class="px-8 py-4 bg-slate-50 text-slate-600 rounded-2xl text-[11px] font-black uppercase border border-slate-200 inline-flex items-center hover:bg-slate-100 transition-all">
@@ -337,7 +341,7 @@
                             </a>
                         </div>
                         <div class="flex flex-col space-y-4">
-                            <button class="px-10 py-5 text-white rounded-[1.5rem] text-[11px] font-black uppercase shadow-xl hover:opacity-90 transition-all" style="background-color: #00aff0;">Validar Avance</button>
+                            <button class="px-10 py-5 text-white rounded-[1.5rem] text-[11px] font-black uppercase shadow-xl hover:opacity-90 transition-all" style="background-color: #009EDB;">Validar Avance</button>
                             <button class="px-10 py-5 border border-slate-200 rounded-[1.5rem] text-[11px] font-black uppercase text-slate-300 hover:bg-red-50 hover:text-red-500 transition-all">Denegar</button>
                         </div>
                     </div>
