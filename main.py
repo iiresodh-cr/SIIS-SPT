@@ -9,7 +9,7 @@ import binascii
 import urllib.parse
 from typing import Optional, List, Dict, Any
 
-# --- IMPORTACIONES DE GOOGLE AUTH (MANTENIDAS) ---
+# --- IMPORTACIONES DE GOOGLE AUTH ---
 import google.auth
 import google.auth.transport.requests
 from google.auth import iam
@@ -68,7 +68,7 @@ class SuggestionInput(BaseModel):
     submission_id: str
     recommendation_id: str
 
-# --- MIDDLEWARE DE SEGURIDAD (ORIGINAL) ---
+# --- MIDDLEWARE DE SEGURIDAD ---
 async def get_current_user(request: Request) -> Dict[str, Any]:
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
@@ -92,31 +92,38 @@ async def get_current_user(request: Request) -> Dict[str, Any]:
         logger.error(f"Error de Auth: {str(e)}")
         raise HTTPException(status_code=401, detail="Token inválido")
 
-# --- FUNCIÓN DE FIRMA MANUAL V4 (MANTENIDA POR SOLICITUD, AUNQUE USEMOS PROXY) ---
+# --- FUNCIÓN DE FIRMA MANUAL V4 ADAPTADA (SIN JSON FILE) ---
 def generate_v4_signed_url_manual(bucket_name, blob_name):
     """
-    Implementación manual del algoritmo V4 de Google.
-    Se mantiene en el código para no reducir líneas, pero el sistema usará el Proxy.
+    Implementación manual del algoritmo V4 de Google, usando IAM Signer
+    para firmar remotamente sin necesidad de clave privada local.
     """
     try:
+        # 1. Obtener credenciales y refrescar para tener el email
         creds, project = google.auth.default()
         auth_req = google.auth.transport.requests.Request()
         creds.refresh(auth_req)
         service_account_email = creds.service_account_email
 
+        # 2. Configuración de tiempo
         now = datetime.datetime.now(datetime.timezone.utc)
         request_timestamp = now.strftime("%Y%m%dT%H%M%SZ")
         datestamp = now.strftime("%Y%m%d")
-        expiration = 3600
+        expiration = 3600 # 1 hora
 
+        # 3. Construcción de Recursos Canónicos
+        # Usamos estilo path: storage.googleapis.com/bucket/objeto
         host = "storage.googleapis.com"
         canonical_uri = f"/{bucket_name}/{urllib.parse.quote(blob_name, safe='')}"
+        
         credential_scope = f"{datestamp}/auto/storage/goog4_request"
         credential = f"{service_account_email}/{credential_scope}"
         
+        # Headers firmados
         canonical_headers = f"host:{host}\n"
         signed_headers = "host"
 
+        # Query Params Canónicos
         query_params = {
             "X-Goog-Algorithm": "GOOG4-RSA-SHA256",
             "X-Goog-Credential": credential,
@@ -125,10 +132,12 @@ def generate_v4_signed_url_manual(bucket_name, blob_name):
             "X-Goog-SignedHeaders": signed_headers,
         }
         
+        # Ordenar parámetros para la firma
         canonical_query_string = "&".join(
             [f"{k}={urllib.parse.quote(v, safe='')}" for k, v in sorted(query_params.items())]
         )
 
+        # 4. Solicitud Canónica (Canonical Request)
         canonical_request = "\n".join([
             "GET",
             canonical_uri,
@@ -138,6 +147,7 @@ def generate_v4_signed_url_manual(bucket_name, blob_name):
             "UNSIGNED-PAYLOAD"
         ])
 
+        # 5. String to Sign
         algorithm = "GOOG4-RSA-SHA256"
         canonical_request_hash = hashlib.sha256(canonical_request.encode("utf-8")).hexdigest()
         
@@ -148,12 +158,17 @@ def generate_v4_signed_url_manual(bucket_name, blob_name):
             canonical_request_hash
         ])
 
+        # 6. FIRMA REMOTA (Aquí está la magia para Cloud Run)
+        # Usamos IAM API en lugar de archivo local
         signer = iam.Signer(auth_req, creds, service_account_email)
         signature_bytes = signer.sign(string_to_sign.encode("utf-8"))
         signature_hex = binascii.hexlify(signature_bytes).decode("utf-8")
 
+        # 7. Construcción URL Final
         final_url = f"https://{host}{canonical_uri}?{canonical_query_string}&X-Goog-Signature={signature_hex}"
+        
         return final_url
+
     except Exception as e:
         logger.error(f"Error generando firma manual V4: {str(e)}")
         return None
@@ -242,20 +257,13 @@ async def upload_evidence(
         logger.error(f"Fallo carga: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-# --- ENDPOINT PROXY (SOLUCIÓN TÉCNICA PARA EL ERROR 403) ---
+# --- PROXY DE DESCARGA ---
 @app.get("/api/evidence/proxy")
 async def download_proxy(path: str, token: str = Query(...)):
-    """
-    Este endpoint es crítico. Evita usar URLs de Google firmadas.
-    Descarga el archivo usando los permisos de la cuenta de servicio del servidor
-    y se lo entrega al usuario directamente.
-    """
     try:
-        # 1. Validar token manualmente (porque viene en URL, no en header)
         decoded_token = auth.verify_id_token(token)
         email = decoded_token.get("email")
         
-        # 2. Verificar permisos de admin
         user_ref = db.collection("artifacts").document(APP_ID).collection("users").document(email)
         user_doc = user_ref.get()
         if not user_doc.exists:
@@ -263,16 +271,13 @@ async def download_proxy(path: str, token: str = Query(...)):
         
         user_data = user_doc.to_dict()
         if not (user_data.get("role") == "admin" or user_data.get("inst_slug") == "all"):
-             raise HTTPException(status_code=403, detail="Requiere permisos de administrador")
+             raise HTTPException(status_code=403, detail="Requiere Admin")
 
-        # 3. Descarga interna (Server-to-Server)
         bucket = storage_client.bucket(BUCKET_NAME)
         blob = bucket.blob(path)
-        
         if not blob.exists():
              raise HTTPException(status_code=404, detail="Archivo no encontrado")
 
-        # 4. Entregar archivo al navegador
         file_stream = io.BytesIO(blob.download_as_bytes())
         content_type = blob.content_type or "application/octet-stream"
         filename = path.split("/")[-1]
@@ -284,33 +289,47 @@ async def download_proxy(path: str, token: str = Query(...)):
         )
     except Exception as e:
         logger.error(f"Error Proxy: {str(e)}")
-        raise HTTPException(status_code=401, detail="Acceso denegado o token inválido")
+        raise HTTPException(status_code=401, detail="Acceso denegado")
 
 @app.get("/api/admin/pending")
 async def list_pending(request: Request, user=Depends(get_current_user)):
     """
-    Lista los pendientes.
-    MODIFICADO: Ahora genera URLs que apuntan al Proxy (/api/evidence/proxy)
-    en lugar de intentar generar URLs de Google que dan error 403.
+    MODIFICADO: Implementación estricta de la documentación V4 de Google Cloud Storage.
+    Se inyecta el service_account_email para que funcione en Cloud Run.
     """
     if not user["is_admin"]:
         raise HTTPException(status_code=403)
     try:
+        # --- OBTENCIÓN DE CREDENCIALES PARA FIRMA V4 ---
+        creds, _ = google.auth.default()
+        if not creds.valid:
+            # Importamos Request solo aquí para evitar conflicto de nombres con el parámetro 'request'
+            from google.auth.transport.requests import Request as GoogleAuthRequest
+            creds.refresh(GoogleAuthRequest())
+        
         subs_stream = db.collection("artifacts").document(APP_ID).collection("submissions").where("status", "==", "PENDIENTE").stream()
         results = []
-        
-        # Obtenemos la URL base del propio servidor (ej: https://mi-api.run.app)
-        base_url = str(request.base_url).rstrip("/")
         
         for s in subs_stream:
             data = s.to_dict()
             file_path = data.get("file_path")
             
             if file_path:
-                # AQUÍ ESTÁ EL CAMBIO CRÍTICO PARA EVITAR EL 403:
-                # Construimos la URL hacia nuestro PROXY, no hacia Google.
-                encoded_path = urllib.parse.quote(file_path)
-                data["file_url"] = f"{base_url}/api/evidence/proxy?path={encoded_path}"
+                blob = storage_client.bucket(BUCKET_NAME).blob(file_path)
+                
+                # --- GENERACIÓN URL V4 SEGÚN DOCUMENTACIÓN ---
+                signed_url = blob.generate_signed_url(
+                    version="v4",
+                    expiration=datetime.timedelta(minutes=15),
+                    method="GET",
+                    service_account_email=creds.service_account_email # Requisito clave para Cloud Run
+                )
+                
+                # FIX CRÍTICO: Reemplazo forzado del dominio para evitar redirección al Login de Google
+                if "storage.cloud.google.com" in signed_url:
+                    data["file_url"] = signed_url.replace("storage.cloud.google.com", "storage.googleapis.com")
+                else:
+                    data["file_url"] = signed_url
             
             rec_doc = db.collection("artifacts").document(APP_ID).collection("public").document("data").collection("recommendations").document(data['recommendation_id']).get()
             if rec_doc.exists:
