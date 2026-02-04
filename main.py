@@ -103,6 +103,12 @@ async def auth_me(user=Depends(get_current_user)):
         "role": user.get("role")
     }
 
+# --- ENDPOINT DE VERIFICACIÓN DE VERSIÓN ---
+@app.get("/api/version")
+async def check_version():
+    # Si puedes ver esto, el servidor se actualizó
+    return {"version": "NUEVA_ESTRATEGIA_PROXY_V2", "status": "active"}
+
 @app.get("/api/recommendations")
 async def list_recommendations(user=Depends(get_current_user)):
     try:
@@ -180,6 +186,9 @@ async def upload_evidence(
 @app.get("/api/evidence/proxy")
 async def download_proxy(path: str, token: str = Query(...)):
     try:
+        # LOG PARA VERIFICAR QUE LA PETICIÓN LLEGA AL SERVIDOR
+        logger.info(f"SOLICITUD PROXY RECIBIDA: {path}")
+        
         decoded_token = auth.verify_id_token(token)
         email = decoded_token.get("email")
         
@@ -199,11 +208,8 @@ async def download_proxy(path: str, token: str = Query(...)):
              logger.error(f"Archivo no encontrado en bucket: {path}")
              raise HTTPException(status_code=404, detail="Archivo no encontrado")
 
-        # Leemos el archivo en memoria y lo enviamos como stream
         file_content = blob.download_as_bytes()
         file_stream = io.BytesIO(file_content)
-        
-        # Intentamos adivinar el content type, o usamos octet-stream
         content_type = blob.content_type or "application/octet-stream"
         filename = path.split("/")[-1]
 
@@ -218,13 +224,13 @@ async def download_proxy(path: str, token: str = Query(...)):
 
 @app.get("/api/admin/pending")
 async def list_pending(request: Request, user=Depends(get_current_user)):
-    """
-    MODIFICADO: Se fuerza Cache-Control en los headers para evitar que el navegador
-    use los enlaces antiguos (Google Storage) y use los nuevos (Proxy Relativo).
-    """
     if not user["is_admin"]:
         raise HTTPException(status_code=403)
     try:
+        # --- LOG CRÍTICO DE DEPURACIÓN ---
+        # Si no ves este mensaje en los logs de Google Cloud Run, NO se ha actualizado.
+        logger.info("EJECUTANDO VERSIÓN NUEVA: LISTANDO PENDIENTES CON PROXY RELATIVO")
+        
         subs_stream = db.collection("artifacts").document(APP_ID).collection("submissions").where("status", "==", "PENDIENTE").stream()
         results = []
         
@@ -233,10 +239,11 @@ async def list_pending(request: Request, user=Depends(get_current_user)):
             file_path = data.get("file_path")
             
             if file_path:
-                # Construimos la URL relativa al Proxy.
-                # Usamos quote para manejar espacios y caracteres especiales en la ruta.
+                # ESTRATEGIA PROXY RELATIVO
                 encoded_path = urllib.parse.quote(file_path)
+                # Esta es la línea clave. Si el navegador va a Google, esta línea no se está ejecutando.
                 data["file_url"] = f"/api/evidence/proxy?path={encoded_path}"
+                logger.info(f"URL Generada para {data.get('id')}: {data['file_url']}")
             
             rec_doc = db.collection("artifacts").document(APP_ID).collection("public").document("data").collection("recommendations").document(data['recommendation_id']).get()
             if rec_doc.exists:
@@ -248,7 +255,7 @@ async def list_pending(request: Request, user=Depends(get_current_user)):
                 data["timestamp"] = data["timestamp"].isoformat()
             results.append(data)
             
-        # FIX CRÍTICO: Devolvemos JSONResponse explícito con headers anti-caché.
+        # Headers anti-caché estrictos
         return JSONResponse(
             content=results,
             headers={
