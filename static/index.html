@@ -893,11 +893,37 @@
             
         }
 
-        // FUNCIÓN AUXILIAR PARA ABRIR ARCHIVO CON TOKEN (SOLUCIÓN PROXY)
+        // --- CÓDIGO NUEVO (LA SOLUCIÓN) ---
         async function openEvidenceWithToken(url) {
             if (!url) return;
             const token = await firebase.auth().currentUser.getIdToken();
-            window.open(`${url}&token=${token}`, '_blank');
+        
+            // LÓGICA DE INTERCEPTACIÓN:
+            // Si la URL que viene de la base de datos apunta directamente a Google (storage.cloud...),
+            // significa que es un registro antiguo. Lo forzamos a pasar por tu nuevo Proxy.
+            
+            let finalUrl = url;
+        
+            if (url.includes('storage.cloud.google.com') || url.includes('storage.googleapis.com')) {
+                // 1. Decodificamos la URL para evitar errores con espacios (%20)
+                const decodedUrl = decodeURIComponent(url);
+                
+                // 2. Buscamos la parte importante de la ruta (después de 'evidence/')
+                if (decodedUrl.includes('/evidence/')) {
+                    const cleanPath = 'evidence/' + decodedUrl.split('/evidence/')[1];
+                    
+                    // 3. Construimos la NUEVA dirección apuntando a tu servidor Python
+                    // Esto transforma: "https://google.com/.../evidence/archivo.pdf"
+                    // En: "/api/evidence/proxy?path=evidence/archivo.pdf"
+                    finalUrl = `/api/evidence/proxy?path=${encodeURIComponent(cleanPath)}`;
+                }
+            }
+        
+            // Determinar si usamos '?' o '&' para pegar el token (depende de si ya hay parámetros)
+            const separator = finalUrl.includes('?') ? '&' : '?';
+            
+            // Abrir el PDF usando el conducto seguro
+            window.open(`${finalUrl}${separator}token=${token}`, '_blank');
         }
 
         // UTILIDADES DE INTERFAZ
