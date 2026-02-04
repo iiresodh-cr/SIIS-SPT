@@ -5,7 +5,8 @@ import datetime
 import json
 import re
 import google.auth
-import google.auth.transport.requests  # <--- IMPORTANTE: Necesario para refrescar credenciales
+import google.auth.transport.requests
+from google.auth import iam  # <--- IMPORTANTE: Necesario para firmar remotamente
 from typing import Optional, List, Dict, Any
 from fastapi import FastAPI, Depends, HTTPException, Request, UploadFile, File, Form, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -45,7 +46,6 @@ app.add_middleware(
 if not firebase_admin._apps:
     firebase_admin.initialize_app()
 
-# Inicialización básica (se refinará en los endpoints que necesiten firma)
 db = firestore.Client(project=PROJECT_ID)
 storage_client = storage.Client(project=PROJECT_ID)
 vertexai.init(project=PROJECT_ID, location=LOCATION)
@@ -172,20 +172,23 @@ async def upload_evidence(
 
 @app.get("/api/admin/pending")
 async def list_pending(user=Depends(get_current_user)):
-    """Solución 403 y Redirección: Usa credenciales explícitas y fuerza dominio API."""
+    """Solución Final 403: Usa IAM Signer explícito y fuerza dominio API."""
     if not user["is_admin"]:
         raise HTTPException(status_code=403)
     try:
-        # 1. Obtener y refrescar credenciales explícitamente para asegurar que tenemos el email
-        creds, project_id = google.auth.default()
+        # 1. Configurar credenciales y Signer (firmante remoto)
+        creds, _ = google.auth.default()
         auth_req = google.auth.transport.requests.Request()
-        creds.refresh(auth_req) # <--- CRÍTICO: Esto llena el service_account_email
+        creds.refresh(auth_req) # Obtener email real
         
-        # 2. Re-inicializar cliente con estas credenciales frescas
-        authorized_storage_client = storage.Client(credentials=creds, project=project_id)
-        bucket = authorized_storage_client.bucket(BUCKET_NAME)
+        # Este 'signer' usa la API 'projects.serviceAccounts.signBlob' 
+        # en lugar de intentar firmar localmente (que falla sin clave privada)
+        signer = iam.Signer(auth_req, creds, creds.service_account_email)
         
+        logger.info(f"Generando URL firmada con cuenta: {creds.service_account_email}")
+
         subs_stream = db.collection("artifacts").document(APP_ID).collection("submissions").where("status", "==", "PENDIENTE").stream()
+        bucket = storage_client.bucket(BUCKET_NAME)
         results = []
         
         for s in subs_stream:
@@ -195,21 +198,27 @@ async def list_pending(user=Depends(get_current_user)):
             if file_path:
                 blob = bucket.blob(file_path)
                 
-                # 3. Generar URL firmada usando el email confirmado
-                signed_url = blob.generate_signed_url(
-                    version="v4", 
-                    expiration=datetime.timedelta(minutes=60), 
-                    method="GET",
-                    service_account_email=creds.service_account_email
-                )
-                
-                # 4. FIX FINAL: Forzar el dominio storage.googleapis.com
-                # Si la URL viene como storage.cloud.google.com, causa el redirect al login.
-                if "storage.cloud.google.com" in signed_url:
-                    data["file_url"] = signed_url.replace("storage.cloud.google.com", "storage.googleapis.com")
-                else:
-                    data["file_url"] = signed_url
-            
+                try:
+                    # 2. Generar URL pasando el 'signer' explícitamente
+                    signed_url = blob.generate_signed_url(
+                        version="v4", 
+                        expiration=datetime.timedelta(minutes=60), 
+                        method="GET",
+                        service_account_email=creds.service_account_email,
+                        signer=signer # <--- CLAVE DEL ÉXITO EN CLOUD RUN
+                    )
+                    
+                    # 3. Asegurar dominio correcto (API) vs incorrecto (Consola con login)
+                    if "storage.cloud.google.com" in signed_url:
+                        data["file_url"] = signed_url.replace("storage.cloud.google.com", "storage.googleapis.com")
+                    else:
+                        data["file_url"] = signed_url
+                        
+                except Exception as url_error:
+                    logger.error(f"Fallo generando URL para {file_path}: {url_error}")
+                    data["file_url"] = None
+
+            # Recuperación de datos adicionales
             rec_doc = db.collection("artifacts").document(APP_ID).collection("public").document("data").collection("recommendations").document(data['recommendation_id']).get()
             if rec_doc.exists:
                 rec_info = rec_doc.to_dict()
@@ -223,7 +232,8 @@ async def list_pending(user=Depends(get_current_user)):
         return results
     except Exception as e:
         logger.error(f"Error pendientes: {str(e)}")
-        raise HTTPException(status_code=500, detail="Error de servidor")
+        # Importante: devolver error 500 con detalles en logs de Cloud Run
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 @app.post("/api/admin/approve")
 async def approve_submission(action: SubmissionAction, user=Depends(get_current_user)):
