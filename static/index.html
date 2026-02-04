@@ -9,6 +9,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
@@ -50,6 +51,19 @@
             color: var(--brand-color); 
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
+
+        /* Estilos específicos para que el informe PIDA se vea bien */
+        #ai-result h1, #ai-result h2, #ai-result h3 { 
+            font-weight: 800; 
+            color: #1e293b;
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+        #ai-result h3 { font-size: 1.5rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.5rem; }
+        #ai-result p { margin-bottom: 1rem; }
+        #ai-result ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; }
+        #ai-result strong { color: var(--brand-color); font-weight: 700; }
+        #ai-result hr { margin: 2rem 0; border-color: #e2e8f0; }
 
         .glass-effect {
             background: rgba(255, 255, 255, 0.7);
@@ -114,7 +128,7 @@
             </div>
         </nav>
 
-        <div class="p-8 border-t border-white/20 bg-black/5 text-white">
+        <div class="p-8 border-t border-white/20 bg-black/5">
             <div id="user-info-section" class="mb-6 hidden">
                 <p class="text-[9px] font-black text-white/70 uppercase tracking-widest mb-3 px-2">Usuario Activo</p>
                 <div id="display-email" class="text-[11px] font-bold text-white truncate bg-white/10 p-4 rounded-2xl border border-white/20"></div>
@@ -131,10 +145,10 @@
             <div class="flex justify-between items-end mb-12">
                 <div>
                     <h2 class="text-6xl font-black text-slate-800 tracking-tighter mb-3">Auditoría</h2>
-                    <p class="text-slate-500 font-semibold text-xl text-balance">Monitoreo de cumplimiento y descripción técnica de recomendaciones.</p>
+                    <p class="text-slate-500 font-semibold text-xl">Estado de cumplimiento de recomendaciones internacionales.</p>
                 </div>
-                <div id="inst-tag" class="bg-white px-8 py-4 rounded-3xl border border-slate-200 shadow-sm text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 italic">
-                    Sincronizando con base de datos...
+                <div id="inst-tag" class="bg-white px-8 py-4 rounded-3xl border border-slate-200 shadow-sm text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 italic">
+                    Sincronizando...
                 </div>
             </div>
 
@@ -142,8 +156,8 @@
                 <table class="w-full text-left table-fixed">
                     <thead class="bg-slate-50 border-b border-slate-100">
                         <tr>
-                            <th class="w-1/4 p-10 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Identificación / Institución</th>
-                            <th class="w-2/5 p-10 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Descripción Técnica</th>
+                            <th class="w-1/4 p-10 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">ID e Institución</th>
+                            <th class="w-2/5 p-10 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Contenido Recomendación</th>
                             <th class="w-1/5 p-10 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] text-center">Avance</th>
                             <th class="w-auto p-10 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Gestión</th>
                         </tr>
@@ -155,19 +169,19 @@
         </div>
 
         <div id="laboratorio" class="tab-content">
-            <div class="max-w-4xl mx-auto">
-                <h2 class="text-6xl font-black text-slate-800 mb-4 tracking-tighter">Incidencia IA</h2>
-                <p class="text-slate-500 mb-12 text-xl font-medium">Análisis estratégico mediante PIDA.</p>
+            <div class="max-w-5xl mx-auto">
+                <h2 class="text-6xl font-black text-slate-800 mb-4 tracking-tighter text-center">Motor PIDA</h2>
+                <p class="text-slate-500 mb-12 text-xl font-medium text-center italic">Plataforma de Investigación y Defensa Avanzada.</p>
                 
                 <div class="bg-white p-14 rounded-[3.5rem] border border-slate-200 shadow-2xl">
                     <div class="mb-10">
-                        <label class="block text-xs font-black text-slate-400 uppercase tracking-[0.3em] mb-6">Descripción del Obstáculo:</label>
-                        <textarea id="ai-input" class="w-full h-64 p-10 bg-slate-50 border-0 rounded-[2.5rem] focus:ring-4 focus:ring-[#009EDB]/10 outline-none transition-all text-2xl leading-relaxed" placeholder="Ej: No existe voluntad política para reformar el reglamento interno..."></textarea>
+                        <label class="block text-xs font-black text-slate-400 uppercase tracking-[0.3em] mb-6">Describa la barrera o el obstáculo institucional:</label>
+                        <textarea id="ai-input" class="w-full h-64 p-10 bg-slate-50 border-0 rounded-[2.5rem] focus:ring-4 focus:ring-[#009EDB]/10 outline-none transition-all text-2xl leading-relaxed" placeholder="Ej: No existe presupuesto para la capacitación anual..."></textarea>
                     </div>
                     
                     <button onclick="analyzeInstitutionalBarrier()" id="ai-btn" class="w-full text-white py-7 rounded-[2rem] font-black text-xl uppercase tracking-widest shadow-2xl transition-all active:scale-95 flex items-center justify-center hover:opacity-90" style="background-color: var(--brand-color);">Ejecutar Análisis PIDA</button>
                     
-                    <div id="ai-result" class="mt-14 p-12 bg-slate-50 text-slate-700 rounded-[3rem] hidden border-l-[16px] border-[#009EDB] whitespace-pre-wrap leading-loose shadow-inner text-xl">
+                    <div id="ai-result" class="mt-14 p-14 bg-white text-slate-700 rounded-[3rem] hidden border-l-[16px] border-[#009EDB] leading-relaxed shadow-2xl text-xl overflow-hidden animate-in fade-in slide-in-from-top-4 duration-500">
                         </div>
                 </div>
             </div>
@@ -175,12 +189,12 @@
 
         <div id="admin" class="tab-content">
             <h2 class="text-6xl font-black mb-4 tracking-tighter" style="color: var(--brand-color);">Validación</h2>
-            <p class="text-slate-500 mb-16 text-xl">Revisión técnica de evidencias cargadas por las instituciones.</p>
+            <p class="text-slate-500 mb-16 text-xl">Revisión técnica de evidencias.</p>
             
             <div id="admin-pending-container" class="space-y-8">
                 <div class="bg-white p-24 rounded-[4rem] border-4 border-dashed border-slate-100 text-center flex flex-col items-center">
                     <i data-lucide="inbox" class="w-24 h-24 text-slate-100 mb-8"></i>
-                    <p class="text-slate-300 font-black uppercase tracking-[0.3em] text-sm">No hay evidencias pendientes de revisión técnica</p>
+                    <p class="text-slate-300 font-black uppercase tracking-[0.3em] text-sm">Sin pendientes</p>
                 </div>
             </div>
         </div>
@@ -191,7 +205,7 @@
             <div class="flex justify-between items-start mb-10">
                 <div>
                     <h3 class="text-4xl font-black tracking-tight mb-2 text-slate-800">Cargar Prueba</h3>
-                    <p class="text-slate-500 font-bold text-lg">Oficialización de avance técnico.</p>
+                    <p class="text-slate-500 font-bold text-lg">Acreditación de cumplimiento.</p>
                 </div>
                 <button onclick="closeModal()" class="text-slate-200 hover:text-red-500 transition-colors"><i data-lucide="x-circle" class="w-10 h-10"></i></button>
             </div>
@@ -201,21 +215,20 @@
             <div class="space-y-10">
                 <div>
                     <label class="block text-[10px] font-black uppercase text-slate-400 mb-4 tracking-widest">Resumen del logro:</label>
-                    <textarea id="modal-desc" class="w-full p-8 bg-slate-50 border border-slate-100 rounded-[2rem] outline-none focus:ring-4 focus:ring-[#009EDB]/10 text-lg leading-relaxed" rows="4" placeholder="Describa cómo esta acción cumple con la recomendación..."></textarea>
+                    <textarea id="modal-desc" class="w-full p-8 bg-slate-50 border border-slate-100 rounded-[2rem] outline-none focus:ring-4 focus:ring-[#009EDB]/10 text-lg leading-relaxed" rows="4" placeholder="Describa el avance técnico..."></textarea>
                 </div>
                 
                 <div class="p-8 bg-slate-50 border-4 border-dashed border-slate-200 rounded-[2.5rem] flex flex-col items-center">
                     <label class="block text-[10px] font-black uppercase text-slate-400 mb-6 tracking-widest">Documento Probatorio (PDF):</label>
-                    <input type="file" id="modal-file" class="block w-full text-sm text-slate-500 file:mr-6 file:py-4 file:px-8 file:rounded-full file:border-0 file:text-[11px] file:font-black file:bg-[#009EDB] file:text-white hover:file:bg-[#0086ba] cursor-pointer">
+                    <input type="file" id="modal-file" class="block w-full text-sm text-slate-500 file:mr-6 file:py-4 file:px-8 file:rounded-full file:border-0 file:text-[11px] file:font-bold file:bg-[#009EDB] file:text-white hover:file:bg-[#0086ba] cursor-pointer">
                 </div>
 
-                <button onclick="processEvidenceUpload()" id="btn-submit-ev" class="w-full py-6 text-white rounded-[2rem] font-black text-sm uppercase tracking-[0.2em] shadow-2xl transition-all active:scale-95 hover:opacity-90" style="background-color: var(--brand-color);">Sincronizar con Storage</button>
+                <button onclick="processEvidenceUpload()" id="btn-submit-ev" class="w-full py-6 text-white rounded-[2rem] font-black text-sm uppercase tracking-[0.2em] shadow-2xl transition-all active:scale-95 hover:opacity-90" style="background-color: var(--brand-color);">Sincronizar Evidencia</button>
             </div>
         </div>
     </div>
 
     <script>
-        // --- CONFIGURACIÓN E INICIALIZACIÓN ---
         const firebaseConfig = {
             apiKey: "AIzaSyD0n5oY7LGk7qaqMX_PjBvHfWnaxRa1nqg",
             authDomain: "siis-stp.firebaseapp.com",
@@ -225,7 +238,6 @@
         firebase.initializeApp(firebaseConfig);
         lucide.createIcons();
 
-        // --- GESTIÓN DE AUTENTICACIÓN Y ROLES ---
         firebase.auth().onAuthStateChanged(async (user) => {
             if (user) {
                 document.getElementById('login-screen').classList.add('hidden');
@@ -251,11 +263,12 @@
 
                 if (isAdmin) {
                     document.getElementById('admin-tab').classList.remove('hidden');
-                    document.getElementById('inst-tag').innerText = "Acceso: Administrador Técnico IIRESODH";
-                    document.getElementById('inst-tag').classList.add('text-[#009EDB]', 'border-[#009EDB]/20');
+                    const tag = document.getElementById('inst-tag');
+                    tag.innerText = "Acceso: Administrador IIRESODH";
+                    tag.classList.add('text-[#009EDB]', 'border-[#009EDB]/20');
                     loadPendingAdminQueue();
                 } else {
-                    document.getElementById('inst-tag').innerText = "Acceso: Punto Focal Institucional";
+                    document.getElementById('inst-tag').innerText = "Acceso: Punto Focal";
                 }
 
                 const recRes = await fetch('/api/recommendations', { 
@@ -268,34 +281,34 @@
             }
         }
 
-        // Renderizado del Dashboard: ID Protagonista y Columna de Descripción
+        // Renderizado del Dashboard con IDs Prominentes y Descripciones
         function renderDashboard(data) {
             const list = document.getElementById('recommendations-list');
             list.innerHTML = data.map(item => `
                 <tr class="group hover:bg-slate-50/50 transition-all border-b border-slate-50">
                     <td class="p-10 align-top">
-                        <div class="text-[14px] font-black text-[#009EDB] font-mono tracking-tight uppercase mb-2 bg-[#009EDB]/5 px-4 py-2 rounded-lg inline-block border border-[#009EDB]/10">
+                        <div class="text-[14px] font-black text-[#009EDB] font-mono tracking-tight uppercase mb-3 bg-[#009EDB]/5 px-4 py-2 rounded-lg inline-block border border-[#009EDB]/10">
                             ${item.id || 'CAT-XX'}
                         </div>
-                        <div class="font-black text-slate-800 text-lg tracking-tight leading-tight mt-3">
+                        <div class="font-black text-slate-800 text-lg tracking-tight leading-tight mt-2 italic">
                             ${item.institution}
                         </div>
                     </td>
                     <td class="p-10 align-top">
-                        <p class="text-slate-500 font-semibold text-base leading-relaxed line-clamp-4 hover:line-clamp-none transition-all cursor-default">
-                            ${item.description || 'No se encontró descripción técnica para esta recomendación.'}
+                        <p class="text-slate-500 font-semibold text-base leading-relaxed line-clamp-4 hover:line-clamp-none transition-all duration-300">
+                            ${item.description || 'Consultando descripción técnica en Firestore...'}
                         </p>
                     </td>
-                    <td class="p-10 text-center align-top">
-                        <div class="flex flex-col items-center justify-center space-y-4 pt-2">
-                            <div class="w-full bg-slate-100 h-4 rounded-full overflow-hidden border border-slate-200 shadow-inner max-w-[150px]">
+                    <td class="p-10 text-center align-top pt-12">
+                        <div class="flex flex-col items-center space-y-4">
+                            <div class="w-full bg-slate-100 h-4 rounded-full overflow-hidden border border-slate-200 shadow-inner max-w-[140px]">
                                 <div class="h-full transition-all duration-1000 shadow-lg" style="width:${item.progress}%; background-color: #009EDB;"></div>
                             </div>
                             <span class="text-xl font-black text-slate-700">${item.progress}%</span>
                         </div>
                     </td>
-                    <td class="p-10 text-right align-top">
-                        <button onclick="openModal('${item.id}')" class="px-8 py-4 border border-[#009EDB]/20 text-[#009EDB] rounded-[1.5rem] text-[11px] font-black uppercase tracking-widest hover:bg-[#009EDB] hover:text-white transition-all shadow-sm active:scale-95 mt-1">
+                    <td class="p-10 text-right align-top pt-12">
+                        <button onclick="openModal('${item.id}')" class="px-8 py-4 border border-[#009EDB]/20 text-[#009EDB] rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-[#009EDB] hover:text-white transition-all shadow-sm active:scale-95">
                             Gestionar
                         </button>
                     </td>
@@ -314,7 +327,7 @@
             
             btn.disabled = true; 
             resDiv.classList.remove('hidden'); 
-            resDiv.innerHTML = '<div class="flex items-center font-bold text-xl text-slate-400"><i data-lucide="refresh-cw" class="animate-spin mr-5 w-6 h-6"></i> Procesando vectores PIDA...</div>';
+            resDiv.innerHTML = '<div class="flex items-center font-bold text-2xl text-slate-400 p-8"><i data-lucide="refresh-cw" class="animate-spin mr-5 w-8 h-8"></i> Consultando Motor PIDA...</div>';
             lucide.createIcons();
 
             try {
@@ -324,9 +337,10 @@
                     body: JSON.stringify({ text: text })
                 });
                 const data = await res.json();
-                resDiv.innerText = data.analysis;
+                // FIX: Procesamos el Markdown aquí con marked.parse()
+                resDiv.innerHTML = marked.parse(data.analysis);
             } catch (e) {
-                resDiv.innerText = "Error crítico en el motor de incidencia IA.";
+                resDiv.innerHTML = "<div class='p-8 text-red-500 font-bold'>Error crítico en el motor de incidencia IA.</div>";
             } finally {
                 btn.disabled = false;
                 lucide.createIcons();
@@ -345,13 +359,13 @@
                         <div class="max-w-2xl">
                             <div class="text-[11px] font-black text-[#009EDB] uppercase tracking-[0.2em] mb-4">${sub.recommendation_id}</div>
                             <h4 class="text-2xl font-black text-slate-800 mb-4 leading-tight">${sub.description}</h4>
-                            <p class="text-sm text-slate-400 font-bold mb-8 italic">Remitente: ${sub.submitted_by}</p>
+                            <p class="text-sm text-slate-400 font-bold mb-8 italic uppercase tracking-wider">Remitente: ${sub.submitted_by}</p>
                             <a href="${sub.file_url}" target="_blank" class="px-8 py-4 bg-slate-50 text-slate-600 rounded-2xl text-[11px] font-black uppercase border border-slate-200 inline-flex items-center hover:bg-slate-100 transition-all">
                                 <i data-lucide="external-link" class="w-4 h-4 mr-3"></i> Examinar Evidencia Técnica
                             </a>
                         </div>
                         <div class="flex flex-col space-y-4">
-                            <button class="px-10 py-5 text-white rounded-[1.5rem] text-[11px] font-black uppercase shadow-xl hover:opacity-90 transition-all" style="background-color: #00aff0;">Validar Avance</button>
+                            <button class="px-10 py-5 text-white rounded-[1.5rem] text-[11px] font-black uppercase shadow-xl hover:opacity-90 transition-all" style="background-color: #009EDB;">Validar Avance</button>
                             <button class="px-10 py-5 border border-slate-200 rounded-[1.5rem] text-[11px] font-black uppercase text-slate-300 hover:bg-red-50 hover:text-red-500 transition-all">Denegar</button>
                         </div>
                     </div>
@@ -367,14 +381,9 @@
             const recommendationId = document.getElementById('modal-rec-id').value;
             const description = document.getElementById('modal-desc').value;
 
-            if (!fileInput.files[0] || !recommendationId) {
-                alert("Por favor, seleccione un archivo PDF.");
-                return;
-            }
+            if (!fileInput.files[0] || !recommendationId) { alert("Archivo requerido."); return; }
             
-            btn.disabled = true; 
-            btn.innerText = "Sincronizando con Storage...";
-            
+            btn.disabled = true; btn.innerText = "Sincronizando...";
             const formData = new FormData();
             formData.append('recommendation_id', recommendationId);
             formData.append('description', description);
@@ -387,30 +396,17 @@
                     body: formData
                 });
                 const result = await res.json();
-                
-                if (res.status === 422) {
-                    alert("Error 422: Verifique los campos técnicos.");
-                } else {
-                    alert("Evidencia cargada correctamente.");
-                    closeModal();
-                }
+                alert(result.message || "Evidencia cargada.");
+                closeModal();
             } catch (e) {
-                alert("Falla crítica en la red.");
+                alert("Falla de red.");
             } finally {
-                btn.disabled = false; 
-                btn.innerText = "Sincronizar Evidencia";
+                btn.disabled = false; btn.innerText = "Sincronizar Evidencia";
             }
         }
 
-        function openModal(id) { 
-            document.getElementById('modal-rec-id').value = id; 
-            document.getElementById('upload-modal').classList.remove('hidden'); 
-        }
-        
-        function closeModal() { 
-            document.getElementById('upload-modal').classList.add('hidden'); 
-        }
-
+        function openModal(id) { document.getElementById('modal-rec-id').value = id; document.getElementById('upload-modal').classList.remove('hidden'); }
+        function closeModal() { document.getElementById('upload-modal').classList.add('hidden'); }
         function switchTab(tabId, el) {
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
@@ -422,20 +418,12 @@
             const email = document.getElementById('login-email').value;
             const pass = document.getElementById('login-pass').value;
             const btn = document.getElementById('btn-login');
-            
             btn.disabled = true; btn.innerText = "Verificando...";
-            try { 
-                await firebase.auth().signInWithEmailAndPassword(email, pass); 
-            } catch (e) { 
-                alert("Acceso denegado: " + e.message); 
-                btn.disabled = false; btn.innerText = "Iniciar Sesión";
-            }
+            try { await firebase.auth().signInWithEmailAndPassword(email, pass); } 
+            catch (e) { alert("Error: " + e.message); btn.disabled = false; btn.innerText = "Iniciar Sesión"; }
         }
 
-        function handleLogout() { 
-            firebase.auth().signOut(); 
-            window.location.reload(); 
-        }
+        function handleLogout() { firebase.auth().signOut(); window.location.reload(); }
 
         async function downloadOfficialReport() {
             const token = await firebase.auth().currentUser.getIdToken();
@@ -443,9 +431,7 @@
             const blob = await res.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = url;
-            a.download = "Informe_Auditoria_SPT.pdf";
-            a.click();
+            a.href = url; a.download = "Informe_Auditoria.pdf"; a.click();
         }
     </script>
 </body>
