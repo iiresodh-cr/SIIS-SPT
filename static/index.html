@@ -52,7 +52,7 @@
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
 
-        /* Formateo de Informes Generados por PIDA */
+        /* Formato Informe PIDA */
         #ai-result h1, #ai-result h2, #ai-result h3 { font-weight: 800; color: #1e293b; margin-top: 1.5rem; margin-bottom: 0.75rem; }
         #ai-result h3 { font-size: 1.5rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.5rem; }
         #ai-result p { margin-bottom: 1rem; }
@@ -93,10 +93,9 @@
     </div>
 
     <aside class="w-80 flex flex-col shrink-0 shadow-xl" style="background-color: var(--brand-color); color: white;">
-        
         <div class="p-8 bg-white border-b border-slate-100 mb-8 flex flex-col items-center justify-center">
             <img src="https://storage.googleapis.com/mnpt-img/image002.png" alt="Logo MNPT" class="h-20 w-auto object-contain">
-            <p class="text-[9px] text-slate-400 font-black uppercase tracking-[0.15em] mt-4 text-center leading-tight">Plataforma Técnica SPT/CAT</p>
+            <p class="text-[9px] text-slate-400 font-black uppercase mt-4 text-center">Plataforma Técnica SPT/CAT</p>
         </div>
 
         <nav class="flex-1 px-4 space-y-3">
@@ -140,7 +139,7 @@
             <div class="flex justify-between items-end mb-12">
                 <div>
                     <h2 class="text-6xl font-black text-slate-800 tracking-tighter mb-3">Auditoría</h2>
-                    <p class="text-slate-500 font-semibold text-xl">Estado de cumplimiento y detalle de recomendaciones.</p>
+                    <p class="text-slate-500 font-semibold text-xl">Estado de cumplimiento institucional.</p>
                 </div>
                 <div id="inst-tag" class="bg-white px-8 py-4 rounded-3xl border border-slate-200 shadow-sm text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 italic">
                     Sincronizando...
@@ -177,19 +176,19 @@
                     <button onclick="analyzeInstitutionalBarrier()" id="ai-btn" class="w-full text-white py-7 rounded-[2rem] font-black text-xl uppercase tracking-widest shadow-2xl transition-all active:scale-95 flex items-center justify-center hover:opacity-90" style="background-color: var(--brand-color);">Ejecutar Análisis PIDA</button>
                     
                     <div id="ai-result" class="mt-14 p-14 bg-white text-slate-700 rounded-[3rem] hidden border-l-[16px] border-[#009EDB] leading-relaxed shadow-2xl text-xl overflow-hidden animate-in fade-in slide-in-from-top-4 duration-500">
-                    </div>
+                        </div>
                 </div>
             </div>
         </div>
 
         <div id="admin" class="tab-content">
             <h2 class="text-6xl font-black mb-4 tracking-tighter" style="color: var(--brand-color);">Validación Técnica</h2>
-            <p class="text-slate-500 mb-16 text-xl">Gestión de evidencias asistida por el Motor PIDA.</p>
+            <p class="text-slate-500 mb-16 text-xl">Revisión de evidencias y ajuste de cumplimiento asistido por IA.</p>
             
             <div id="admin-pending-container" class="space-y-8">
                 <div class="bg-white p-24 rounded-[4rem] border-4 border-dashed border-slate-100 text-center flex flex-col items-center">
                     <i data-lucide="inbox" class="w-24 h-24 text-slate-100 mb-8"></i>
-                    <p class="text-slate-300 font-black uppercase tracking-[0.3em] text-sm">Sin evidencias pendientes de revisión</p>
+                    <p class="text-slate-300 font-black uppercase tracking-[0.3em] text-sm">Sin evidencias pendientes</p>
                 </div>
             </div>
         </div>
@@ -200,7 +199,7 @@
             <div class="flex justify-between items-start mb-10">
                 <div>
                     <h3 class="text-4xl font-black tracking-tight mb-2 text-slate-800">Cargar Prueba</h3>
-                    <p class="text-slate-500 font-bold text-lg">Acreditación de cumplimiento.</p>
+                    <p class="text-slate-500 font-bold text-lg">Acreditación de cumplimiento institucional.</p>
                 </div>
                 <button onclick="closeModal()" class="text-slate-200 hover:text-red-500 transition-colors"><i data-lucide="x-circle" class="w-10 h-10"></i></button>
             </div>
@@ -214,17 +213,16 @@
                 </div>
                 
                 <div class="p-8 bg-slate-50 border-4 border-dashed border-slate-200 rounded-[2.5rem] flex flex-col items-center">
-                    <label class="block text-[10px] font-black uppercase text-slate-400 mb-6 tracking-widest">Archivo PDF:</label>
+                    <label class="block text-[10px] font-black uppercase text-slate-400 mb-6 tracking-widest">Documento PDF:</label>
                     <input type="file" id="modal-file" class="block w-full text-sm text-slate-500 file:mr-6 file:py-4 file:px-8 file:rounded-full file:border-0 file:text-[11px] file:font-bold file:bg-[#009EDB] file:text-white hover:file:bg-[#0086ba] cursor-pointer">
                 </div>
 
-                <button onclick="processEvidenceUpload()" id="btn-submit-ev" class="w-full py-6 text-white rounded-[2rem] font-black text-sm uppercase tracking-[0.2em] shadow-2xl transition-all active:scale-95 hover:opacity-90" style="background-color: var(--brand-color);">Sincronizar con PIDA</button>
+                <button onclick="processEvidenceUpload()" id="btn-submit-ev" class="w-full py-6 text-white rounded-[2rem] font-black text-sm uppercase tracking-[0.2em] shadow-2xl transition-all active:scale-95 hover:opacity-90" style="background-color: var(--brand-color);">Sincronizar Evidencia</button>
             </div>
         </div>
     </div>
 
     <script>
-        // Inicialización
         const firebaseConfig = {
             apiKey: "AIzaSyD0n5oY7LGk7qaqMX_PjBvHfWnaxRa1nqg",
             authDomain: "siis-stp.firebaseapp.com",
@@ -234,7 +232,6 @@
         firebase.initializeApp(firebaseConfig);
         lucide.createIcons();
 
-        // Autenticación
         firebase.auth().onAuthStateChanged(async (user) => {
             if (user) {
                 document.getElementById('login-screen').classList.add('hidden');
@@ -252,7 +249,9 @@
                 const resMe = await fetch('/api/auth/me', { headers: { 'Authorization': `Bearer ${token}` } });
                 const profile = await resMe.json();
                 
-                const isAdmin = profile.is_admin || user.email === "durquilla@iiresodh.org" || user.email === "prueba@iiresodh.org";
+                const isAdmin = profile.is_admin || 
+                                user.email === "durquilla@iiresodh.org" || 
+                                user.email === "prueba@iiresodh.org";
 
                 if (isAdmin) {
                     document.getElementById('admin-tab').classList.remove('hidden');
@@ -267,28 +266,19 @@
                 const recRes = await fetch('/api/recommendations', { headers: { 'Authorization': `Bearer ${token}` } });
                 const recommendations = await recRes.json();
                 renderDashboard(recommendations);
-            } catch (err) {
-                console.error("Falla en sincronización:", err);
-            }
+            } catch (err) { console.error(err); }
         }
 
-        // Dashboard: ID Protagonista y Descripción de Firestore
         function renderDashboard(data) {
             const list = document.getElementById('recommendations-list');
             list.innerHTML = data.map(item => `
                 <tr class="group hover:bg-slate-50 transition-all border-b border-slate-50">
                     <td class="p-10 align-top">
-                        <div class="text-[14px] font-black text-[#009EDB] font-mono tracking-tight uppercase mb-3 bg-[#009EDB]/5 px-4 py-2 rounded-lg inline-block border border-[#009EDB]/10">
-                            ${item.id || 'CAT-XX'}
-                        </div>
-                        <div class="font-black text-slate-800 text-lg mt-2 italic">
-                            ${item.institution}
-                        </div>
+                        <div class="text-[14px] font-black text-[#009EDB] font-mono tracking-tight uppercase mb-3 bg-[#009EDB]/5 px-4 py-2 rounded-lg inline-block border border-[#009EDB]/10">${item.id || 'CAT-XX'}</div>
+                        <div class="font-black text-slate-800 text-lg mt-2 italic">${item.institution}</div>
                     </td>
                     <td class="p-10 align-top">
-                        <p class="text-slate-500 font-semibold text-base leading-relaxed line-clamp-4 hover:line-clamp-none transition-all duration-300">
-                            ${item.description || 'Sin descripción en Firestore.'}
-                        </p>
+                        <p class="text-slate-500 font-semibold text-base leading-relaxed line-clamp-4 hover:line-clamp-none transition-all duration-300">${item.description || 'Sin datos.'}</p>
                     </td>
                     <td class="p-10 text-center align-top pt-12">
                         <div class="flex flex-col items-center space-y-4">
@@ -299,9 +289,7 @@
                         </div>
                     </td>
                     <td class="p-10 text-right align-top pt-12">
-                        <button onclick="openModal('${item.firestore_id || item.id}')" class="px-8 py-4 border border-[#009EDB]/20 text-[#009EDB] rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-[#009EDB] hover:text-white transition-all shadow-sm active:scale-95">
-                            Gestionar
-                        </button>
+                        <button onclick="openModal('${item.firestore_id || item.id}')" class="px-8 py-4 border border-[#009EDB]/20 text-[#009EDB] rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-[#009EDB] hover:text-white shadow-sm active:scale-95">Gestionar</button>
                     </td>
                 </tr>
             `).join('');
@@ -314,11 +302,7 @@
             const resDiv = document.getElementById('ai-result');
             if (!text.trim()) return;
             
-            btn.disabled = true; 
-            resDiv.classList.remove('hidden'); 
-            resDiv.innerHTML = '<div class="flex items-center font-bold text-2xl text-slate-400 p-8"><i data-lucide="refresh-cw" class="animate-spin mr-5 w-8 h-8"></i> PIDA Analizando...</div>';
-            lucide.createIcons();
-
+            btn.disabled = true; resDiv.classList.remove('hidden'); resDiv.innerHTML = 'Consultando PIDA...';
             const token = await firebase.auth().currentUser.getIdToken();
             try {
                 const res = await fetch('/api/ai/analyze', {
@@ -328,15 +312,10 @@
                 });
                 const data = await res.json();
                 resDiv.innerHTML = marked.parse(data.analysis);
-            } catch (e) {
-                resDiv.innerHTML = "Error en el motor de incidencia.";
-            } finally {
-                btn.disabled = false;
-                lucide.createIcons();
-            }
+            } catch (e) { resDiv.innerHTML = "Error técnico."; } finally { btn.disabled = false; lucide.createIcons(); }
         }
 
-        // Panel Admin: Sugerencia de Avance por IA
+        // --- Panel Admin: Solución URL Firme y Campo Vacío ---
         async function loadPendingAdminQueue() {
             const token = await firebase.auth().currentUser.getIdToken();
             const res = await fetch('/api/admin/pending', { headers: { 'Authorization': `Bearer ${token}` } });
@@ -351,7 +330,7 @@
                             <h4 class="text-2xl font-black text-slate-800 mb-4">${sub.description}</h4>
                             <p class="text-sm text-slate-400 font-bold mb-6 italic">Remitente: ${sub.submitted_by}</p>
                             <div class="flex space-x-4">
-                                <a href="${sub.file_url}" target="_blank" class="px-6 py-4 bg-slate-50 text-slate-600 rounded-2xl text-[11px] font-black border hover:bg-slate-100 inline-flex items-center transition-all">
+                                <a href="${sub.file_url}" target="_blank" class="px-6 py-4 bg-slate-50 text-slate-600 rounded-2xl text-[11px] font-black border hover:bg-slate-100 inline-flex items-center">
                                     <i data-lucide="external-link" class="w-4 h-4 mr-3"></i> Revisar Prueba
                                 </a>
                                 <button onclick="consultAISuggestion('${sub.id}', '${sub.recommendation_id}')" class="px-6 py-4 bg-[#009EDB]/10 text-[#009EDB] rounded-2xl text-[11px] font-black border border-[#009EDB]/20 flex items-center hover:bg-[#009EDB]/20 transition-all">
@@ -362,10 +341,10 @@
                         </div>
                         <div class="flex flex-col space-y-6 items-end">
                             <div class="flex flex-col items-end">
-                                <label class="text-[10px] font-black text-slate-400 uppercase mb-2">Nuevo Avance (%)</label>
-                                <input type="number" id="progress-${sub.id}" value="100" min="0" max="100" class="w-24 p-4 border rounded-xl text-center font-black text-xl text-[#009EDB]">
+                                <label class="text-[10px] font-black text-slate-400 uppercase mb-2 text-right">Nuevo Avance (%)</label>
+                                <input type="number" id="progress-${sub.id}" value="" min="0" max="100" class="w-24 p-4 border border-slate-200 rounded-xl text-center font-black text-xl text-[#009EDB]">
                             </div>
-                            <button onclick="approveSubmission('${sub.id}')" class="px-10 py-5 text-white rounded-[1.5rem] text-[11px] font-black uppercase shadow-xl hover:opacity-90 active:scale-95 transition-all" style="background-color: #009EDB;">Validar Avance</button>
+                            <button onclick="approveSubmission('${sub.id}')" class="px-10 py-5 text-white rounded-[1.5rem] text-[11px] font-black uppercase shadow-xl hover:opacity-90 active:scale-95 transition-all" style="background-color: var(--brand-color);">Validar Avance</button>
                         </div>
                     </div>
                 `).join('');
@@ -376,7 +355,7 @@
         async function consultAISuggestion(subId, recId) {
             const div = document.getElementById(`suggestion-${subId}`);
             div.classList.remove('hidden');
-            div.innerHTML = 'PIDA analizando...';
+            div.innerHTML = 'Analizando brecha...';
             const token = await firebase.auth().currentUser.getIdToken();
             try {
                 const res = await fetch('/api/admin/suggest-progress', {
@@ -385,13 +364,14 @@
                     body: JSON.stringify({ submission_id: subId, recommendation_id: recId })
                 });
                 const data = await res.json();
-                div.innerHTML = `<strong>Sugerencia (${data.percentage}%):</strong> ${data.justification} <br>
-                <button onclick="document.getElementById('progress-${subId}').value=${data.percentage}" class="mt-3 text-[#009EDB] font-black underline uppercase text-[10px]">Aplicar este valor</button>`;
-            } catch (e) { div.innerHTML = "Error de conexión."; }
+                div.innerHTML = `<strong>Propuesta IA (${data.percentage}%):</strong> ${data.justification} <br>
+                <button onclick="document.getElementById('progress-${subId}').value=${data.percentage}" class="mt-3 text-[#009EDB] font-black underline uppercase text-[10px]">Cargar este valor</button>`;
+            } catch (e) { div.innerHTML = "Error en PIDA."; }
         }
 
         async function approveSubmission(submissionId) {
             const pVal = document.getElementById(`progress-${submissionId}`).value;
+            if (!pVal) { alert("Debe asignar un porcentaje."); return; }
             if (!confirm(`¿Confirmar avance al ${pVal}%?`)) return;
             const token = await firebase.auth().currentUser.getIdToken();
             try {
@@ -411,7 +391,7 @@
             const description = document.getElementById('modal-desc').value;
             if (!fileInput.files[0] || !recommendationId) { alert("Faltan datos."); return; }
             
-            btn.disabled = true; btn.innerText = "Subiendo...";
+            btn.disabled = true; btn.innerText = "Sincronizando...";
             const token = await firebase.auth().currentUser.getIdToken();
             const formData = new FormData();
             formData.append('recommendation_id', recommendationId);
@@ -426,10 +406,9 @@
                 });
                 alert("Evidencia subida.");
                 closeModal();
-            } catch (e) { alert("Error."); } finally { btn.disabled = false; btn.innerText = "Sincronizar"; }
+            } catch (e) { alert("Error."); } finally { btn.disabled = false; btn.innerText = "Sincronizar Evidencia"; }
         }
 
-        // Navegación
         function openModal(id) { document.getElementById('modal-rec-id').value = id; document.getElementById('upload-modal').classList.remove('hidden'); }
         function closeModal() { document.getElementById('upload-modal').classList.add('hidden'); }
         function switchTab(tabId, el) {
@@ -444,7 +423,7 @@
             const btn = document.getElementById('btn-login');
             btn.disabled = true; 
             try { await firebase.auth().signInWithEmailAndPassword(email, pass); } 
-            catch (e) { alert("Error."); btn.disabled = false; }
+            catch (e) { alert("Acceso denegado."); btn.disabled = false; }
         }
         function handleLogout() { firebase.auth().signOut(); window.location.reload(); }
         async function downloadOfficialReport() {
